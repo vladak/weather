@@ -4,10 +4,6 @@ Simple weather monitoring Python script
 
 ## Install
 
-- needs pip3:
-```
-    sudo apt-get install -y python3-pip
-```
 - needs OWFS:
 ```
     sudo apt-get -y install python3-ow
@@ -16,7 +12,7 @@ Simple weather monitoring Python script
 ```
     git clone https://github.com/vladak/weather.git /srv/weather
 ```
-- copy `weather.service` file to `/etc/systemd/system/PiOLED.service`:
+- copy `weather.service` file to `/etc/systemd/system/weather.service`:
 - enable the service:
 ```
 sudo systemctl enable weather
