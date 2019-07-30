@@ -1,0 +1,14 @@
+[Unit]
+Description=Weather Service
+
+[Service]
+User=pi
+Group=pi
+Type=simple
+WorkingDirectory=/srv/weather
+ExecStart=python3 /srv/weather/weather.py
+ExecStop=/bin/kill -2 $MAINPID
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target
