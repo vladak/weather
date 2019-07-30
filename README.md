@@ -10,7 +10,7 @@ Simple weather monitoring Python script
 ```
 - needs OWFS:
 ```
-sudo apt-get -y install owfs python3-ow
+sudo apt-get -y install python3-ow
 ```
 - clone the repository to `/srv/`:
 ```
