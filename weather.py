@@ -43,9 +43,9 @@ def main():
     sleep_seconds = 1
 
     if sys.stdin.isatty():
-        logger = get_logger(handler=logging.NullHandler())
-    else:
         logger = get_logger()
+    else:
+        logger = get_logger(handler=logging.NullHandler())
     logger.debug('Running')
 
     file_logger = get_logger(name='weather',
