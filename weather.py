@@ -40,6 +40,8 @@ def get_logger(name=__name__, handler=logging.StreamHandler(),
 
 
 def main():
+    # It might take some significant time for measurements to be extracted from
+    # OWFS so even with 1 second the loop will not be tight.
     sleep_seconds = 1
 
     if sys.stdin.isatty():
