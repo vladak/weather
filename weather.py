@@ -17,7 +17,7 @@ sensor_names = {'21F723030000': 'terasa',
 # The order needs to be preserved.
 sensor_names_to_record = ['kuchyne', 'terasa']
 TELEGRAF_SEPARATOR = "telegraf: "
-LOG_FILE = '/run/user/1000/temperature.log'
+LOG_FILE = '/var/log/temperature.log'
 
 
 def get_logger(name=__name__, handler=logging.StreamHandler(),
