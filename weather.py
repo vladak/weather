@@ -40,7 +40,7 @@ def get_logger(name=__name__, handler=logging.StreamHandler(),
 
 
 def main():
-    sleep_seconds = 5
+    sleep_seconds = 1
 
     if sys.stdin.isatty():
         logger = get_logger(handler=logging.NullHandler())
