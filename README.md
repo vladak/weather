@@ -13,6 +13,9 @@ Simple weather monitoring Python script
     git clone https://github.com/vladak/weather.git /srv/weather
 ```
 - copy `weather.service` file to `/etc/systemd/system/weather.service`:
+```
+   cp weather.service /etc/systemd/system/weather.service
+```
 - enable the service:
 ```
 sudo systemctl enable weather
