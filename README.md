@@ -26,6 +26,10 @@ sudo systemctl daemon-reload
 sudo systemctl start weather
 sudo systemctl status weather
 ```
+- install `logrotate` config:
+```
+cp temperature.logrotate /etc/logrotate.d/temperature
+```
 
 ### Telegraf
 
