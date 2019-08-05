@@ -1,6 +1,6 @@
 # weather
 
-Simple weather monitoring Python script
+Simple weather monitoring Python script. Collects the temperature data using OWFS, uses Telegraf service to feed the measurements into InfluxDB.
 
 ## Install
 
