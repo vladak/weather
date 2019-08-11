@@ -61,7 +61,12 @@ def main():
         record = {}
         for sensor in sensorlist:
             # We only want temperature sensors for now.
-            if int(sensor.family) != 28:
+            try:
+                family = int(sensor.family)
+            except ow.exUnknownSensor:
+                continue
+
+            if family != 28:
                 continue
 
             sensor_id = sensor.id
