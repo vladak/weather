@@ -9,6 +9,8 @@ WorkingDirectory=/srv/weather
 ExecStart=python3 /srv/weather/weather.py
 ExecStop=/bin/kill -2 $MAINPID
 TimeoutStartSec=0
+Restart=always
+RestartSec=3
 
 [Install]
 WantedBy=multi-user.target
