@@ -53,7 +53,7 @@ the logparser section and output section that goes to standard output:
 ```
 [[inputs.logparser]]
    ## file(s) to read:
-   # files = ["/var/log/temperature.log"]
+   # files = ["/var/run/temperature.log"]
    files = ["temperature.log"]
 
    # Only send these fields to the output plugins
