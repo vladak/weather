@@ -24,6 +24,11 @@ sudo systemctl enable weather
 ```
 sudo systemctl daemon-reload
 ```
+- create log file:
+```
+sudo touch /var/run/temperature.log
+sudo chown $LOGNAME /var/run/temperature.log
+```
 - to start the service:
 ```
 sudo systemctl start weather
@@ -31,14 +36,14 @@ sudo systemctl status weather
 ```
 - install `logrotate` config:
 ```
-cp temperature.logrotate /etc/logrotate.d/temperature
+sudo cp temperature.logrotate /etc/logrotate.d/temperature
 ```
 
 ### Telegraf
 
 To make the logs available in InfluxDB via Telegraf:
 ```
-cp weather.conf /etc/telegraf/telegraf.d/weather.conf
+sudo cp weather.conf /etc/telegraf/telegraf.d/weather.conf
 sudo service telegraf restart
 ```
 
