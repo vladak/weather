@@ -1,64 +1,45 @@
 #!/usr/bin/env python3
 """
-Acquire readings from 1-wire temperature sensors and log them into
-a log file so they can be read from there using Telegraf and passed
-to InfluxDB which will be used as data source in Grafana.
+Acquire readings from 1-wire temperature sensors and present
+them via HTTP for Prometheus server.
 """
 
 import ow
 import logging
 import time
 import sys
+from prometheus_client import start_http_server, Gauge
 
 
-sensor_names = {'21F723030000': 'terasa',
-                'D5F2CF020000': 'kuchyne',
+KUCHYNE = 'kuchyne'
+TERASA = 'terasa'
+sensor_names = {'21F723030000': TERASA,
+                'D5F2CF020000': KUCHYNE,
                 'E2C0CF020000': 'pocitace'}
-# The order needs to be preserved.
-sensor_names_to_record = ['kuchyne', 'terasa']
-TELEGRAF_SEPARATOR = "telegraf: "
-LOG_FILE = '/var/run/temperature.log'
-
-
-def get_logger(name=__name__, handler=logging.StreamHandler(),
-               level=logging.INFO):
-    """
-    :param name: logger name
-    :param level: log level
-    :return: logger
-    """
-    format = '%(asctime)s %(levelname)8s %(name)s | %(message)s'
-
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-    # Use ISO 8601 date format.
-    formatter = logging.Formatter(format, datefmt='%Y-%m-%d %H:%M:%S%z')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-
-    return logger
+sensor_names_to_record = [KUCHYNE, TERASA]
+EXPOSED_PORT = 8111   # port to listen on for HTTP requests
 
 
 def main():
     # It might take some significant time for measurements to be extracted from
     # OWFS so even with 1 second the loop will not be tight.
-    sleep_seconds = 1
+    sleep_seconds = 5
 
-    if sys.stdin.isatty():
-        logger = get_logger()
-    else:
-        logger = get_logger(handler=logging.NullHandler())
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
     logger.debug('Running')
-
-    file_logger = get_logger(name='weather',
-                             handler=logging.
-                             FileHandler(LOG_FILE))
 
     ow.init('localhost:4304')
     sensorlist = ow.Sensor('/').sensorList()
 
+    gauges = {KUCHYNE: Gauge('weather_temp_' + KUCHYNE,
+                             'Temperature in ' + KUCHYNE),
+              TERASA: Gauge('weather_temp_' + TERASA,
+                            'Temperature in ' + TERASA)}
+
+    start_http_server(EXPOSED_PORT)
+
     while True:
-        record = {}
         for sensor in sensorlist:
             # We only want temperature sensors for now.
             try:
@@ -79,16 +60,9 @@ def main():
             logger.info(sensor_name + ' temp=' + temp)
 
             if sensor_name in sensor_names_to_record:
-                record[sensor_name] = temp
+                gauges[sensor_name].set(temp)
 
             time.sleep(sleep_seconds)
-
-        if len(record) == len(sensor_names_to_record):
-            value_str = ""
-            for name in sensor_names_to_record:
-                value_str = value_str + f"{name}={record[name]} "
-
-            file_logger.info(TELEGRAF_SEPARATOR + value_str)
 
 
 if __name__ == "__main__":
