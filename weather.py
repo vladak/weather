@@ -70,7 +70,7 @@ def sensor_loop():
                     logger.info(f'pressure at sea level={pressure_val}')
                     gauges[PRESSURE_SEA].set(pressure_val)
 
-        logger.debug("sensors: {}".format(sensorlist))
+        logger.debug(f"sensors: {sensorlist}")
         for sensor in sensorlist:
             # We only want temperature sensors for now.
             try:
@@ -92,7 +92,7 @@ def sensor_loop():
             # sometimes 0 value readings are produced
             # - how to tell these are invalid ?
             if temp and sensor_name in sensor_names_to_record:
-                logger.info(sensor_name + ' temp=' + temp)
+                logger.info(f'{sensor_name} temp={temp}')
                 gauges[sensor_name].set(temp)
 
                 if sensor_name == TERASA:
@@ -106,7 +106,7 @@ def main():
     logger.setLevel(logging.INFO)
     logger.info('Running')
 
-    logger.info("Starting HTTP server on port {}".format(EXPOSED_PORT))
+    logger.info(f"Starting HTTP server on port {EXPOSED_PORT}")
     start_http_server(EXPOSED_PORT)
     thread = threading.Thread(target=sensor_loop, daemon=True)
     thread.start()
