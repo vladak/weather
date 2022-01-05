@@ -19,6 +19,7 @@ from prometheus_client import start_http_server, Gauge
 KUCHYNE = 'kuchyne'
 TERASA = 'terasa'
 PRESSURE = 'pressure'
+PRESSURE_SEA = 'pressure_sea'
 sensor_names = {'21F723030000': TERASA,
                 'D5F2CF020000': KUCHYNE,
                 'E2C0CF020000': 'pocitace'}
@@ -28,6 +29,14 @@ EXPOSED_PORT = 8111   # port to listen on for HTTP requests
 # It might take some significant time for measurements to be extracted from
 # OWFS so even with 1 second the loop will not be tight.
 sleep_seconds = 5
+
+# TODO: make this configurable
+height = 245
+
+
+def sea_level_pressure(pressure, outside_temp, height):
+    temp_comp = float(outside_temp) + 273.15
+    return pressure / pow(1.0 - 0.0065 * height / temp_comp, 5.255)
 
 
 def sensor_loop():
@@ -41,20 +50,25 @@ def sensor_loop():
               TERASA: Gauge('weather_temp_' + TERASA,
                             'Temperature in ' + TERASA),
               PRESSURE: Gauge('pressure_hpa',
-                              'Barometric pressure in hPa')}
+                              'Barometric pressure in hPa'),
+              PRESSURE_SEA: Gauge('pressure_sea_level_hpa',
+                                  'Barometric sea level pressure in hPa')}
 
     i2c = board.I2C()
     bmp_sensor = adafruit_bmp280.Adafruit_BMP280_I2C(i2c)
 
-    # TODO: callibrate the sensor
-    # bmp_sensor.sea_level_pressure = 1013.25
-
+    outside_temp = None
     while True:
-        # TODO: check for bmp_sensor being None and also for KeyError
-        pressure_val = bmp_sensor.pressure
-        if pressure_val:
-            logger.info(f'pressure={pressure_val}')
-            gauges[PRESSURE].set(pressure_val)
+        if bmp_sensor:
+            pressure_val = bmp_sensor.pressure
+            if pressure_val:
+                logger.info(f'pressure={pressure_val}')
+                gauges[PRESSURE].set(pressure_val)
+                if outside_temp:
+                    pressure_val = sea_level_pressure(pressure_val,
+                                                      outside_temp, height)
+                    logger.info(f'pressure at sea level={pressure_val}')
+                    gauges[PRESSURE_SEA].set(pressure_val)
 
         logger.debug("sensors: {}".format(sensorlist))
         for sensor in sensorlist:
@@ -81,6 +95,9 @@ def sensor_loop():
                 logger.info(sensor_name + ' temp=' + temp)
                 gauges[sensor_name].set(temp)
 
+                if sensor_name == TERASA:
+                    outside_temp = temp
+
         time.sleep(sleep_seconds)
 
 
@@ -94,6 +111,7 @@ def main():
     thread = threading.Thread(target=sensor_loop, daemon=True)
     thread.start()
     thread.join()
+
 
 if __name__ == "__main__":
     logging.basicConfig()
