@@ -4,12 +4,12 @@ Acquire readings from 1-wire temperature sensors and present
 them via HTTP for Prometheus server.
 """
 
-import ow
 import logging
 import time
 import sys
 import threading
 
+import ow
 import board
 import adafruit_bmp280
 
