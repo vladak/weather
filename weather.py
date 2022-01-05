@@ -46,8 +46,11 @@ def sensor_loop():
     i2c = board.I2C()
     bmp_sensor = adafruit_bmp280.Adafruit_BMP280_I2C(i2c)
 
-    # TODO: move this to a thread (to avoid refused connections)
+    # TODO: callibrate the sensor
+    # bmp_sensor.sea_level_pressure = 1013.25
+
     while True:
+        # TODO: check for bmp_sensor being None and also for KeyError
         pressure_val = bmp_sensor.pressure
         if pressure_val:
             logger.info(f'pressure={pressure_val}')
@@ -85,9 +88,6 @@ def main():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     logger.info('Running')
-
-    # TODO: callibrate the sensor
-    # sensor.sea_level_pressure = 1013.25
 
     logger.info("Starting HTTP server on port {}".format(EXPOSED_PORT))
     start_http_server(EXPOSED_PORT)
