@@ -30,7 +30,6 @@ EXPOSED_PORT = 8111   # port to listen on for HTTP requests
 # OWFS so even with 1 second the loop will not be tight.
 SLEEP_SECONDS = 5
 
-# TODO: make this configurable
 HEIGHT = 245
 
 
