@@ -28,10 +28,10 @@ EXPOSED_PORT = 8111   # port to listen on for HTTP requests
 
 # It might take some significant time for measurements to be extracted from
 # OWFS so even with 1 second the loop will not be tight.
-sleep_seconds = 5
+SLEEP_SECONDS = 5
 
 # TODO: make this configurable
-height = 245
+HEIGHT = 245
 
 
 def sea_level_pressure(pressure, outside_temp, height):
@@ -66,7 +66,7 @@ def sensor_loop():
                 gauges[PRESSURE].set(pressure_val)
                 if outside_temp:
                     pressure_val = sea_level_pressure(pressure_val,
-                                                      outside_temp, height)
+                                                      outside_temp, HEIGHT)
                     logger.info(f'pressure at sea level={pressure_val}')
                     gauges[PRESSURE_SEA].set(pressure_val)
 
@@ -98,7 +98,7 @@ def sensor_loop():
                 if sensor_name == TERASA:
                     outside_temp = temp
 
-        time.sleep(sleep_seconds)
+        time.sleep(SLEEP_SECONDS)
 
 
 def main():
