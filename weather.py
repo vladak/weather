@@ -8,11 +8,16 @@ import ow
 import logging
 import time
 import sys
+
+import board
+import adafruit_bmp280
+
 from prometheus_client import start_http_server, Gauge
 
 
 KUCHYNE = 'kuchyne'
 TERASA = 'terasa'
+PRESSURE = 'pressure'
 sensor_names = {'21F723030000': TERASA,
                 'D5F2CF020000': KUCHYNE,
                 'E2C0CF020000': 'pocitace'}
@@ -27,7 +32,7 @@ def main():
 
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
-    logger.debug('Running')
+    logger.info('Running')
 
     ow.init('localhost:4304')
     sensorlist = ow.Sensor('/').sensorList()
@@ -35,11 +40,26 @@ def main():
     gauges = {KUCHYNE: Gauge('weather_temp_' + KUCHYNE,
                              'Temperature in ' + KUCHYNE),
               TERASA: Gauge('weather_temp_' + TERASA,
-                            'Temperature in ' + TERASA)}
+                            'Temperature in ' + TERASA),
+              PRESSURE: Gauge('pressure_hpa',
+                              'Barometric pressure in hPa')}
 
+    i2c = board.I2C()
+    sensor = adafruit_bmp280.Adafruit_BMP280_I2C(i2c)
+
+    # TODO: callibrate the sensor
+    # sensor.sea_level_pressure = 1013.25
+
+    logger.info("Starting HTTP server on port {}".format(EXPOSED_PORT))
     start_http_server(EXPOSED_PORT)
 
+    # TODO: move this to a thread (to avoid refused connections)
     while True:
+        pressure_val = sensor.pressure
+        if pressure_val:
+            gauges[PRESSURE].set(pressure_val)
+
+        logger.debug("sensors: {}".format(sensorlist))
         for sensor in sensorlist:
             # We only want temperature sensors for now.
             try:
@@ -57,15 +77,18 @@ def main():
                 sensor_name = sensor_id
 
             temp = sensor.temperature
-            logger.info(sensor_name + ' temp=' + temp)
 
-            if sensor_name in sensor_names_to_record:
+            # sometimes 0 value readings are produced
+            # - how to tell these are invalid ?
+            if temp and sensor_name in sensor_names_to_record:
+                logger.info(sensor_name + ' temp=' + temp)
                 gauges[sensor_name].set(temp)
 
-            time.sleep(sleep_seconds)
+        time.sleep(sleep_seconds)
 
 
 if __name__ == "__main__":
+    logging.basicConfig()
     try:
         main()
     except KeyboardInterrupt:
