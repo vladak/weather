@@ -119,7 +119,7 @@ def main():
 
     logging.basicConfig()
     logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(args.loglevel)
     logger.info("Running")
 
     if not os.path.isdir(args.owfsdir):
