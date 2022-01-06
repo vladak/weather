@@ -24,7 +24,7 @@ uses Prometheus web server to export the data.
 ```
 - copy `weather.service` file to `/etc/systemd/system/weather.service`:
 ```
-  cp weather.service /etc/systemd/system/weather.service
+  sudo cp weather.service /etc/systemd/system/weather.service
 ```
 - enable the service:
 ```
