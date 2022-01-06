@@ -3,7 +3,7 @@
 # Weather
 
 Simple weather monitoring Python script. Collects the temperature data using
-OWFS and barometric pressure data using BME280 sensor connected via I2C,
+OWFS and barometric pressure data using [BMP280](https://www.adafruit.com/product/2651) sensor connected via I2C,
 uses Prometheus web server to export the data.
 
 ## Install
