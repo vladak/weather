@@ -80,8 +80,6 @@ def sensor_loop(sleep_timeout, owfsdir, height):
             ) as file_obj:
                 temp = file_obj.read()
 
-            # sometimes 0 value readings are produced
-            # - how to tell these are invalid ?
             if temp and sensor_name in sensor_names_to_record:
                 logger.info(f"{sensor_name} temp={temp}")
                 gauges[sensor_name].set(temp)
