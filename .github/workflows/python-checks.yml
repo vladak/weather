@@ -16,8 +16,8 @@ jobs:
         with:
           submodules: recursive
       - name: Install pre-requisites
-        # python-ow does not seem to be available via PyPi
-        run: sudo apt-get install python-ow
+        # python3-ow does not seem to be available via PyPi
+        run: sudo apt-get install python3-ow
       - uses: actions/setup-python@v2
         with:
           # This is what Raspbian is using.
