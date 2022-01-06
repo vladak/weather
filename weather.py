@@ -72,7 +72,8 @@ def sensor_loop():
         for sensor_id, sensor_name in temp_sensors.items():
             with open(os.path.join(OW_PATH_PREFIX,
                                    '28.' + sensor_id,
-                                   'temperature'), "r") as fp:
+                                   'temperature'), "r",
+                      encoding='ascii') as fp:
                 temp = fp.read()
 
             # sometimes 0 value readings are produced
