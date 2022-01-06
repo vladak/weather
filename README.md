@@ -1,4 +1,6 @@
-# weather
+[![Python checks](https://github.com/vladak/weather/actions/workflows/python-checks.yml/badge.svg)](https://github.com/vladak/weather/actions/workflows/python-checks.yml)
+
+# Weather
 
 Simple weather monitoring Python script. Collects the temperature data using
 OWFS and barometric pressure data using BME280 sensor connected via I2C,
