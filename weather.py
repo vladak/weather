@@ -36,11 +36,19 @@ HEIGHT = 245
 
 
 def sea_level_pressure(pressure, outside_temp, height):
+    """
+    Convert sensor pressure value to value at the sea level.
+    The formula uses outside temperature to compensate.
+    """
     temp_comp = float(outside_temp) + 273.15
     return pressure / pow(1.0 - 0.0065 * height / temp_comp, 5.255)
 
 
 def sensor_loop():
+    """
+    main loop in which sensor values are collected and set into Prometheus
+    client objects.
+    """
     logger = logging.getLogger(__name__)
 
     gauges = {KUCHYNE: Gauge('weather_temp_' + KUCHYNE,
@@ -89,6 +97,9 @@ def sensor_loop():
 
 
 def main():
+    """
+    command line run
+    """
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     logger.info('Running')
