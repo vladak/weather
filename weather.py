@@ -81,8 +81,8 @@ def sensor_loop():
             with open(os.path.join(OW_PATH_PREFIX,
                                    '28.' + sensor_id,
                                    'temperature'), "r",
-                      encoding='ascii') as fp:
-                temp = fp.read()
+                      encoding='ascii') as file_obj:
+                temp = file_obj.read()
 
             # sometimes 0 value readings are produced
             # - how to tell these are invalid ?
