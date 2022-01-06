@@ -61,7 +61,7 @@ def sensor_loop(sleep_timeout, owfsdir, height):
     while True:
         if bmp_sensor:
             pressure_val = bmp_sensor.pressure
-            if pressure_val and pressure_val != 0:
+            if pressure_val and pressure_val > 0:
                 logger.info(f"pressure={pressure_val}")
                 gauges[PRESSURE].set(pressure_val)
                 if outside_temp:
