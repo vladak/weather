@@ -13,7 +13,7 @@ uses Prometheus web server to export the data.
 ```
 - needs OWFS:
 ```
-  sudo apt-get -y install python3-ow
+  sudo apt-get -y install owfs
 ```
 - This needs Prometheus Python client API library:
 ```

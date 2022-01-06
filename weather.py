@@ -6,10 +6,10 @@ them via HTTP for Prometheus server.
 
 import logging
 import time
+import os
 import sys
 import threading
 
-import ow
 import board
 import adafruit_bmp280
 
@@ -20,7 +20,7 @@ KUCHYNE = 'kuchyne'
 TERASA = 'terasa'
 PRESSURE = 'pressure'
 PRESSURE_SEA = 'pressure_sea'
-sensor_names = {'21F723030000': TERASA,
+temp_sensors = {'21F723030000': TERASA,
                 'D5F2CF020000': KUCHYNE,
                 'E2C0CF020000': 'pocitace'}
 sensor_names_to_record = [KUCHYNE, TERASA]
@@ -29,6 +29,8 @@ EXPOSED_PORT = 8111   # port to listen on for HTTP requests
 # It might take some significant time for measurements to be extracted from
 # OWFS so even with 1 second the loop will not be tight.
 SLEEP_SECONDS = 5
+
+OW_PATH_PREFIX = '/run/owfs'
 
 HEIGHT = 245
 
@@ -40,9 +42,6 @@ def sea_level_pressure(pressure, outside_temp, height):
 
 def sensor_loop():
     logger = logging.getLogger(__name__)
-
-    ow.init('localhost:4304')
-    sensorlist = ow.Sensor('/').sensorList()
 
     gauges = {KUCHYNE: Gauge('weather_temp_' + KUCHYNE,
                              'Temperature in ' + KUCHYNE),
@@ -69,24 +68,12 @@ def sensor_loop():
                     logger.info(f'pressure at sea level={pressure_val}')
                     gauges[PRESSURE_SEA].set(pressure_val)
 
-        logger.debug(f"sensors: {sensorlist}")
-        for sensor in sensorlist:
-            # We only want temperature sensors for now.
-            try:
-                family = int(sensor.family)
-            except ow.exUnknownSensor:
-                continue
-
-            if family != 28:
-                continue
-
-            sensor_id = sensor.id
-            try:
-                sensor_name = sensor_names[sensor_id]
-            except KeyError:
-                sensor_name = sensor_id
-
-            temp = sensor.temperature
+        logger.debug(f"sensors: {temp_sensors}")
+        for sensor_id, sensor_name in temp_sensors.items():
+            with open(os.path.join(OW_PATH_PREFIX,
+                                   '28.' + sensor_id,
+                                   'temperature'), "r") as fp:
+                temp = fp.read()
 
             # sometimes 0 value readings are produced
             # - how to tell these are invalid ?
@@ -104,6 +91,10 @@ def main():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     logger.info('Running')
+
+    if not os.path.isdir(OW_PATH_PREFIX):
+        logger.error("Not a directory {}".format(OW_PATH_PREFIX))
+        sys.exit(1)
 
     logger.info(f"Starting HTTP server on port {EXPOSED_PORT}")
     start_http_server(EXPOSED_PORT)

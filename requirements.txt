@@ -1,4 +1,3 @@
 Adafruit-Blinka
 adafruit-circuitpython-bmp280
-# owfs
 prometheus-client
