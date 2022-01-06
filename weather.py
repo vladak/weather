@@ -102,6 +102,7 @@ def main():
     """
     command line run
     """
+    logging.basicConfig()
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     logger.info("Running")
@@ -118,7 +119,6 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig()
     try:
         main()
     except KeyboardInterrupt:
