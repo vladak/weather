@@ -11,11 +11,11 @@ import sys
 import threading
 import time
 
-from logutil import LogLevelAction
-
 import adafruit_bmp280
 import board
 from prometheus_client import Gauge, start_http_server
+
+from logutil import LogLevelAction
 
 KUCHYNE = "kuchyne"
 TERASA = "terasa"
