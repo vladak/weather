@@ -4,6 +4,7 @@ Acquire readings from 1-wire temperature sensors and present
 them via HTTP for Prometheus server.
 """
 
+import argparse
 import logging
 import os
 import sys
@@ -24,15 +25,6 @@ temp_sensors = {
     "E2C0CF020000": "pocitace",
 }
 sensor_names_to_record = [KUCHYNE, TERASA]
-EXPOSED_PORT = 8111  # port to listen on for HTTP requests
-
-# It might take some significant time for measurements to be extracted from
-# OWFS so even with 1 second the loop will not be tight.
-SLEEP_SECONDS = 5
-
-OW_PATH_PREFIX = "/run/owfs"
-
-HEIGHT = 245
 
 
 def sea_level_pressure(pressure, outside_temp, height):
@@ -44,7 +36,7 @@ def sea_level_pressure(pressure, outside_temp, height):
     return pressure / pow(1.0 - 0.0065 * height / temp_comp, 5.255)
 
 
-def sensor_loop():
+def sensor_loop(sleep_timeout, owfsdir, height):
     """
     main loop in which sensor values are collected and set into Prometheus
     client objects.
@@ -72,7 +64,7 @@ def sensor_loop():
                 gauges[PRESSURE].set(pressure_val)
                 if outside_temp:
                     pressure_val = sea_level_pressure(
-                        pressure_val, outside_temp, HEIGHT
+                        pressure_val, outside_temp, int(height)
                     )
                     logger.info(f"pressure at sea level={pressure_val}")
                     gauges[PRESSURE_SEA].set(pressure_val)
@@ -80,7 +72,7 @@ def sensor_loop():
         logger.debug(f"sensors: {temp_sensors}")
         for sensor_id, sensor_name in temp_sensors.items():
             with open(
-                os.path.join(OW_PATH_PREFIX, "28." + sensor_id, "temperature"),
+                os.path.join(owfsdir, "28." + sensor_id, "temperature"),
                 "r",
                 encoding="ascii",
             ) as file_obj:
@@ -95,25 +87,40 @@ def sensor_loop():
                 if sensor_name == TERASA:
                     outside_temp = temp
 
-        time.sleep(SLEEP_SECONDS)
+        time.sleep(sleep_timeout)
 
 
 def main():
     """
     command line run
     """
+    parser = argparse.ArgumentParser(
+        description="weather sensor collector",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "-p", "--port", default=8111, help="port to listen on for HTTP requests"
+    )
+    parser.add_argument("--owfsdir", default="/run/owfs", help="OWFS directory")
+    parser.add_argument("-s", "--sleep", default=5, help="sleep duration in seconds")
+    parser.add_argument(
+        "-H", "--height", default=245, help="height for pressure computation"
+    )
+    args = parser.parse_args()
+
     logging.basicConfig()
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     logger.info("Running")
 
-    if not os.path.isdir(OW_PATH_PREFIX):
+    if not os.path.isdir(args.owfsdir):
         logger.error(f"Not a directory {OW_PATH_PREFIX}")
         sys.exit(1)
 
-    logger.info(f"Starting HTTP server on port {EXPOSED_PORT}")
-    start_http_server(EXPOSED_PORT)
-    thread = threading.Thread(target=sensor_loop, daemon=True)
+    logger.info(f"Starting HTTP server on port {args.port}")
+    start_http_server(int(args.port))
+    thread = threading.Thread(target=sensor_loop, daemon=True,
+            args=[args.sleep, args.owfsdir, args.height])
     thread.start()
     thread.join()
 
