@@ -66,7 +66,7 @@ def sensor_loop(sleep_timeout, owfsdir, height):
                 gauges[PRESSURE].set(pressure_val)
                 if outside_temp:
                     pressure_val = sea_level_pressure(
-                        pressure_val, outside_temp, int(height)
+                        pressure_val, outside_temp, height
                     )
                     logger.info(f"pressure at sea level={pressure_val}")
                     gauges[PRESSURE_SEA].set(pressure_val)
@@ -101,12 +101,18 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
-        "-p", "--port", default=8111, help="port to listen on for HTTP requests"
+        "-p",
+        "--port",
+        default=8111,
+        type=int,
+        help="port to listen on for HTTP requests",
     )
     parser.add_argument("--owfsdir", default="/run/owfs", help="OWFS directory")
-    parser.add_argument("-s", "--sleep", default=5, help="sleep duration in seconds")
     parser.add_argument(
-        "-H", "--height", default=245, help="height for pressure computation"
+        "-s", "--sleep", default=5, type=int, help="sleep duration in seconds"
+    )
+    parser.add_argument(
+        "-H", "--height", default=245, type=int, help="height for pressure computation"
     )
     parser.add_argument(
         "-l",
@@ -127,9 +133,10 @@ def main():
         sys.exit(1)
 
     logger.info(f"Starting HTTP server on port {args.port}")
-    start_http_server(int(args.port))
-    thread = threading.Thread(target=sensor_loop, daemon=True,
-            args=[args.sleep, args.owfsdir, args.height])
+    start_http_server(args.port)
+    thread = threading.Thread(
+        target=sensor_loop, daemon=True, args=[args.sleep, args.owfsdir, args.height]
+    )
     thread.start()
     thread.join()
 
