@@ -27,6 +27,7 @@ import argparse
 import logging
 
 
+# pylint: disable=too-few-public-methods
 class LogLevelAction(argparse.Action):
     """
     This class is supposed to be used as action for argparse.
