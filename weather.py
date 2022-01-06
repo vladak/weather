@@ -105,7 +105,7 @@ def main():
     logger.info('Running')
 
     if not os.path.isdir(OW_PATH_PREFIX):
-        logger.error("Not a directory {}".format(OW_PATH_PREFIX))
+        logger.error(f"Not a directory {OW_PATH_PREFIX}")
         sys.exit(1)
 
     logger.info(f"Starting HTTP server on port {EXPOSED_PORT}")
