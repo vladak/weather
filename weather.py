@@ -5,16 +5,14 @@ them via HTTP for Prometheus server.
 """
 
 import logging
-import time
 import os
 import sys
 import threading
+import time
 
-import board
 import adafruit_bmp280
-
-from prometheus_client import start_http_server, Gauge
-
+import board
+from prometheus_client import Gauge, start_http_server
 
 KUCHYNE = "kuchyne"
 TERASA = "terasa"
