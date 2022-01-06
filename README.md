@@ -6,13 +6,35 @@ Simple weather monitoring Python script. Collects the temperature data using
 OWFS and barometric pressure data using [BMP280](https://www.adafruit.com/product/2651) sensor connected via I2C,
 uses Prometheus web server to export the data.
 
-## Install
+## Setup
+
+### I2C
+
+- enable I2C via `sudo raspi-config`
+- verify that the sensor is visible via `sudo i2cdetect -l`
+  - should report something like this: `i2c-1	i2c       	bcm2835 (i2c@7e804000)          	I2C adapter`
+
+### OWFS
 
 ```
 - needs OWFS system package:
 ```
   sudo apt-get -y install owfs
 ```
+- change `/etc/owfs.conf` to contain the following line and comment about any
+  lines with `FAKE` sensors
+```
+server: usb = all
+```
+
+Initially this was not working and the `owfs` service complained about no bus
+being seen. `apt-get update && apt-get upgrade` pulled bunch of raspberrypi
+kernel updates and after reboot the sensors were available under the `/run/owfs`
+directory.
+
+
+## Install
+
 - clone the repository to `/srv/`:
 ```
   git clone https://github.com/vladak/weather.git /srv/weather
