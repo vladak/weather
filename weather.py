@@ -11,6 +11,8 @@ import sys
 import threading
 import time
 
+from logutil import LogLevelAction
+
 import adafruit_bmp280
 import board
 from prometheus_client import Gauge, start_http_server
@@ -105,6 +107,13 @@ def main():
     parser.add_argument("-s", "--sleep", default=5, help="sleep duration in seconds")
     parser.add_argument(
         "-H", "--height", default=245, help="height for pressure computation"
+    )
+    parser.add_argument(
+        "-l",
+        "--loglevel",
+        action=LogLevelAction,
+        help='Set log level (e.g. "ERROR")',
+        default=logging.INFO,
     )
     args = parser.parse_args()
 
