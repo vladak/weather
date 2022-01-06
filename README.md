@@ -6,22 +6,21 @@ uses Prometheus web server to export the data.
 
 ## Install
 
-- needs Adafruit libraries:
 ```
-  sudo pip3 install Adafruit-Blinka
-  sudo pip3 install adafruit-circuitpython-bmp280
-```
-- needs OWFS:
+- needs OWFS system package:
 ```
   sudo apt-get -y install owfs
-```
-- This needs Prometheus Python client API library:
-```
-  sudo apt-get install python3-prometheus-client
 ```
 - clone the repository to `/srv/`:
 ```
   git clone https://github.com/vladak/weather.git /srv/weather
+```
+- install requirements
+```
+  cd /srv/weather
+  python3 -m venv env
+  . ./env/bin/activate
+  pip install -r requirements.txt
 ```
 - copy `weather.service` file to `/etc/systemd/system/weather.service`:
 ```
