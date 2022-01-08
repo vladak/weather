@@ -73,12 +73,13 @@ def sensor_loop(sleep_timeout, owfsdir, height):
 
         logger.debug(f"sensors: {temp_sensors}")
         for sensor_id, sensor_name in temp_sensors.items():
-            with open(
-                os.path.join(owfsdir, "28." + sensor_id, "temperature"),
-                "r",
-                encoding="ascii",
-            ) as file_obj:
-                temp = file_obj.read()
+            file_path = os.path.join(owfsdir, "28." + sensor_id, "temperature")
+            with open(file_path, "r", encoding="ascii") as file_obj:
+                try:
+                    temp = file_obj.read()
+                except OSError as exception:
+                    logger.error(f"error while reading {file_path}: {exception}")
+		    continue
 
             if temp and sensor_name in sensor_names_to_record:
                 logger.info(f"{sensor_name} temp={temp}")
