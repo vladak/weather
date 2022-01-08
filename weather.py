@@ -79,7 +79,7 @@ def sensor_loop(sleep_timeout, owfsdir, height):
                     temp = file_obj.read()
                 except OSError as exception:
                     logger.error(f"error while reading {file_path}: {exception}")
-		    continue
+                    continue
 
             if temp and sensor_name in sensor_names_to_record:
                 logger.info(f"{sensor_name} temp={temp}")
