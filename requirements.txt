@@ -2,3 +2,4 @@ Adafruit-Blinka
 adafruit-circuitpython-bmp280
 prometheus-client
 adafruit-circuitpython-scd4x
+adafruit-circuitpython-pm25
