@@ -72,12 +72,12 @@ def sensor_loop(sleep_timeout, owfsdir, height):
         if scd4x_sensor:
             co2_ppm = scd4x_sensor.CO2
             if co2_ppm:
-                logger.info(f"CO2 ppm = {co2_ppm}")
+                logger.info(f"CO2 ppm={co2_ppm}")
                 gauges[CO2].set(co2_ppm)
 
             humidity = scd4x_sensor.relative_humidity
             if humidity:
-                logger.info("humidity %0.1f %%" % humidity)
+                logger.info("humidity=%0.1f %%" % humidity)
                 gauges[HUMIDITY].set(humidity)
 
         if bmp_sensor:
