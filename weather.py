@@ -70,7 +70,6 @@ def sensor_loop(sleep_timeout, owfsdir, height):
         logger.info("Waiting for the first measurement from the SCD-40")
         scd4x_sensor.start_periodic_measurement()
 
-    outside_temp = None
     while True:
         if scd4x_sensor:
             acquire_scd4x(gauges, scd4x_sensor)
