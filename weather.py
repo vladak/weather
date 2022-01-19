@@ -24,6 +24,7 @@ PRESSURE = "pressure"
 PRESSURE_SEA = "pressure_sea"
 HUMIDITY = "humidity"
 CO2 = "CO2"
+PM25 = "PM25"
 temp_sensors = {
     "21F723030000": TERASA,
     "D5F2CF020000": KUCHYNE,
@@ -57,6 +58,7 @@ def sensor_loop(sleep_timeout, owfsdir, height):
         ),
         HUMIDITY: Gauge("humidity_pct", "Humidity inside in percent"),
         CO2: Gauge("co2_ppm", "CO2 in ppm"),
+        PM25: Gauge("pm25", "Particles in air", ['measurement']),
     }
 
     i2c = board.I2C()
@@ -78,12 +80,12 @@ def sensor_loop(sleep_timeout, owfsdir, height):
 
         outside_temp = acquire_temperature(gauges, owfsdir)
 
-        acquire_pm25(pm25_sensor)
+        acquire_pm25(gauges, pm25_sensor)
 
         time.sleep(sleep_timeout)
 
 
-def acquire_pm25(pm25_sensor):
+def acquire_pm25(gauges, pm25_sensor):
     """
     Read PM25 data
     :param pm25_sensor:
@@ -95,8 +97,13 @@ def acquire_pm25(pm25_sensor):
     try:
         aqdata = pm25_sensor.read()
     except RuntimeError:
-        logger.warning("Unable to read from PM25 sensor, retrying...")
+        logger.warning("Unable to read from PM25 sensor")
         return
+
+    for name, value in aqdata.items():
+        label_name = name.replace(" ", "_")
+        logger.debug(f"updating PM25 gauge with label={label_name} to {value}")
+        gauges[PM25].labels(measurement=label_name).set(value)
 
     logger.debug(f"PM25 data={aqdata}")
 
