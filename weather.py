@@ -77,7 +77,7 @@ def sensor_loop(sleep_timeout, owfsdir, height):
 
             humidity = scd4x_sensor.relative_humidity
             if humidity:
-                logger.info("humidity=%0.1f %%" % humidity)
+                logger.info(f"humidity={humidity:.1f}")
                 gauges[HUMIDITY].set(humidity)
 
         if bmp_sensor:
