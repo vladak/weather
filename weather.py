@@ -13,6 +13,7 @@ import time
 import adafruit_bmp280
 import adafruit_scd4x
 import board
+from adafruit_pm25.i2c import PM25_I2C
 from prometheus_client import Gauge, start_http_server
 
 from logutil import LogLevelAction
@@ -61,6 +62,7 @@ def sensor_loop(sleep_timeout, owfsdir, height):
     i2c = board.I2C()
     bmp_sensor = adafruit_bmp280.Adafruit_BMP280_I2C(i2c)
     scd4x_sensor = adafruit_scd4x.SCD4X(i2c)
+    pm25_sensor = PM25_I2C(i2c, None)
 
     if scd4x_sensor:
         logger.info("Waiting for the first measurement from the SCD-40")
@@ -76,7 +78,27 @@ def sensor_loop(sleep_timeout, owfsdir, height):
 
         outside_temp = acquire_temperature(gauges, owfsdir)
 
+        acquire_pm25(pm25_sensor)
+
         time.sleep(sleep_timeout)
+
+
+def acquire_pm25(pm25_sensor):
+    """
+    Read PM25 data
+    :param pm25_sensor:
+    :return:
+    """
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        aqdata = pm25_sensor.read()
+    except RuntimeError:
+        logger.warning("Unable to read from PM25 sensor, retrying...")
+        return
+
+    logger.debug(f"PM25 data={aqdata}")
 
 
 def acquire_temperature(gauges, owfsdir):
