@@ -178,7 +178,7 @@ def acquire_scd4x(gauges, scd4x_sensor):
         gauges[CO2].set(co2_ppm)
     humidity = scd4x_sensor.relative_humidity
     if humidity:
-        logger.info(f"humidity={humidity:.1f}")
+        logger.info(f"humidity={humidity:.1f}%")
         gauges[HUMIDITY].set(humidity)
 
 
