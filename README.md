@@ -15,6 +15,7 @@ Uses [Prometheus web server](https://github.com/prometheus/client_python) to exp
 ### I2C
 
 - enable I2C via `sudo raspi-config`
+  - it is under `Interface Options`
 - verify I2C bus presence via `sudo i2cdetect -l`
   - should report something like this: `i2c-1	i2c       	bcm2835 (i2c@7e804000)          	I2C adapter`
 
