@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Acquire readings various sensors and present them via HTTP in Prometheus format.
+Acquire readings from various sensors and present them via HTTP in Prometheus format.
 """
 
 import argparse
