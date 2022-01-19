@@ -75,7 +75,8 @@ def sensor_loop(sleep_timeout, owfsdir, height):
         if scd4x_sensor:
             acquire_scd4x(gauges, scd4x_sensor)
 
-        # Acquire temperature before pressure so that pressure at sea level can be computed as soon as possible.
+        # Acquire temperature before pressure so that pressure at sea level
+        # can be computed as soon as possible.
         outside_temp = acquire_temperature(gauges, owfsdir)
 
         if bmp_sensor:
