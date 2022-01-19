@@ -69,46 +69,89 @@ def sensor_loop(sleep_timeout, owfsdir, height):
     outside_temp = None
     while True:
         if scd4x_sensor:
-            co2_ppm = scd4x_sensor.CO2
-            if co2_ppm:
-                logger.info(f"CO2 ppm={co2_ppm}")
-                gauges[CO2].set(co2_ppm)
-
-            humidity = scd4x_sensor.relative_humidity
-            if humidity:
-                logger.info(f"humidity={humidity:.1f}")
-                gauges[HUMIDITY].set(humidity)
+            acquire_scd4x(gauges, scd4x_sensor)
 
         if bmp_sensor:
-            pressure_val = bmp_sensor.pressure
-            if pressure_val and pressure_val > 0:
-                logger.info(f"pressure={pressure_val}")
-                gauges[PRESSURE].set(pressure_val)
-                if outside_temp:
-                    pressure_val = sea_level_pressure(
-                        pressure_val, outside_temp, height
-                    )
-                    logger.info(f"pressure at sea level={pressure_val}")
-                    gauges[PRESSURE_SEA].set(pressure_val)
+            acquire_pressure(bmp_sensor, gauges, height, outside_temp)
 
-        logger.debug(f"sensors: {temp_sensors}")
-        for sensor_id, sensor_name in temp_sensors.items():
-            file_path = os.path.join(owfsdir, "28." + sensor_id, "temperature")
-            with open(file_path, "r", encoding="ascii") as file_obj:
-                try:
-                    temp = file_obj.read()
-                except OSError as exception:
-                    logger.error(f"error while reading {file_path}: {exception}")
-                    continue
-
-            if temp and sensor_name in sensor_names_to_record:
-                logger.info(f"{sensor_name} temp={temp}")
-                gauges[sensor_name].set(temp)
-
-                if sensor_name == TERASA:
-                    outside_temp = temp
+        outside_temp = acquire_temperature(gauges, owfsdir)
 
         time.sleep(sleep_timeout)
+
+
+def acquire_temperature(gauges, owfsdir):
+    """
+    Read temperature using OWFS.
+    :param gauges:
+    :param owfsdir:
+    :return: outside temperature
+    """
+
+    logger = logging.getLogger(__name__)
+
+    outside_temp = None
+    logger.debug(f"temperature sensors: {temp_sensors}")
+    for sensor_id, sensor_name in temp_sensors.items():
+        file_path = os.path.join(owfsdir, "28." + sensor_id, "temperature")
+        with open(file_path, "r", encoding="ascii") as file_obj:
+            try:
+                temp = file_obj.read()
+            except OSError as exception:
+                logger.error(f"error while reading {file_path}: {exception}")
+                continue
+
+        if temp and sensor_name in sensor_names_to_record:
+            logger.info(f"{sensor_name} temp={temp}")
+            gauges[sensor_name].set(temp)
+
+            if sensor_name == TERASA:
+                outside_temp = temp
+
+    return outside_temp
+
+
+def acquire_pressure(bmp_sensor, gauges, height, outside_temp):
+    """
+    Read data from the pressure sensor and calculate pressure at sea level.
+    :param bmp_sensor:
+    :param gauges:
+    :param height:
+    :param outside_temp:
+    :return:
+    """
+
+    logger = logging.getLogger(__name__)
+
+    pressure_val = bmp_sensor.pressure
+    if pressure_val and pressure_val > 0:
+        logger.info(f"pressure={pressure_val}")
+        gauges[PRESSURE].set(pressure_val)
+        if outside_temp:
+            pressure_val = sea_level_pressure(
+                pressure_val, outside_temp, height
+            )
+            logger.info(f"pressure at sea level={pressure_val}")
+            gauges[PRESSURE_SEA].set(pressure_val)
+
+
+def acquire_scd4x(gauges, scd4x_sensor):
+    """
+    Reads CO2 and humidity from the SCD4x sensor.
+    :param gauges:
+    :param scd4x_sensor:
+    :return:
+    """
+
+    logger = logging.getLogger(__name__)
+
+    co2_ppm = scd4x_sensor.CO2
+    if co2_ppm:
+        logger.info(f"CO2 ppm={co2_ppm}")
+        gauges[CO2].set(co2_ppm)
+    humidity = scd4x_sensor.relative_humidity
+    if humidity:
+        logger.info(f"humidity={humidity:.1f}")
+        gauges[HUMIDITY].set(humidity)
 
 
 def main():
