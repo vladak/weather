@@ -16,7 +16,6 @@ uses Prometheus web server to export the data.
 
 ### OWFS
 
-```
 - needs OWFS system package:
 ```
   sudo apt-get -y install owfs
@@ -63,3 +62,9 @@ directory.
   sudo systemctl start weather
   sudo systemctl status weather
 ```
+
+## Links
+
+### Guides
+
+- SCD-40 guide: https://learn.adafruit.com/adafruit-scd-40-and-scd-41/python-circuitpython
