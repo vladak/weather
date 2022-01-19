@@ -127,9 +127,7 @@ def acquire_pressure(bmp_sensor, gauges, height, outside_temp):
         logger.info(f"pressure={pressure_val}")
         gauges[PRESSURE].set(pressure_val)
         if outside_temp:
-            pressure_val = sea_level_pressure(
-                pressure_val, outside_temp, height
-            )
+            pressure_val = sea_level_pressure(pressure_val, outside_temp, height)
             logger.info(f"pressure at sea level={pressure_val}")
             gauges[PRESSURE_SEA].set(pressure_val)
 
