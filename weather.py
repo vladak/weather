@@ -12,6 +12,7 @@ import threading
 import time
 
 import adafruit_bmp280
+import adafruit_scd4x
 import board
 from prometheus_client import Gauge, start_http_server
 
@@ -21,6 +22,8 @@ KUCHYNE = "kuchyne"
 TERASA = "terasa"
 PRESSURE = "pressure"
 PRESSURE_SEA = "pressure_sea"
+HUMIDITY = "humidity"
+CO2 = "CO2"
 temp_sensors = {
     "21F723030000": TERASA,
     "D5F2CF020000": KUCHYNE,
@@ -52,13 +55,31 @@ def sensor_loop(sleep_timeout, owfsdir, height):
         PRESSURE_SEA: Gauge(
             "pressure_sea_level_hpa", "Barometric sea level pressure in hPa"
         ),
+        HUMIDITY: Gauge("humidity_pct", "Humidity inside in percent"),
+        CO2: Gauge("co2_ppm", "CO2 in ppm"),
     }
 
     i2c = board.I2C()
     bmp_sensor = adafruit_bmp280.Adafruit_BMP280_I2C(i2c)
+    scd4x_sensor = adafruit_scd4x.SCD4X(i2c)
+
+    if scd4x_sensor:
+        logger.info("Waiting for the first measurement from the SCD-40")
+        scd4x_sensor.start_periodic_measurement()
 
     outside_temp = None
     while True:
+        if scd4x_sensor:
+            co2_ppm = scd4x_sensor.CO2
+            if co2_ppm:
+                logger.info(f"CO2 ppm = {co2_ppm}")
+                gauges[CO2].set(co2_ppm)
+
+            humidity = scd4x_sensor.relative_humidity
+            if humidity:
+                logger.info("humidity %0.1f %%" % humidity)
+                gauges[HUMIDITY].set(humidity)
+
         if bmp_sensor:
             pressure_val = bmp_sensor.pressure
             if pressure_val and pressure_val > 0:
