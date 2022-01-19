@@ -105,7 +105,7 @@ def acquire_pm25(gauges, pm25_sensor):
 
     for name, value in aqdata.items():
         label_name = name.replace(" ", "_")
-        logger.debug(f"updating PM25 gauge with label={label_name} to {value}")
+        logger.info(f"setting PM25 gauge with label={label_name} to {value}")
         gauges[PM25].labels(measurement=label_name).set(value)
 
 
