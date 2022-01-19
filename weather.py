@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Acquire readings from 1-wire temperature sensors and present
-them via HTTP for Prometheus server.
+Acquire readings various sensors and present them via HTTP in Prometheus format.
 """
 
 import argparse
