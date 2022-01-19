@@ -102,12 +102,12 @@ def acquire_pm25(gauges, pm25_sensor):
         logger.warning("Unable to read from PM25 sensor")
         return
 
+    logger.debug(f"PM25 data={aqdata}")
+
     for name, value in aqdata.items():
         label_name = name.replace(" ", "_")
         logger.debug(f"updating PM25 gauge with label={label_name} to {value}")
         gauges[PM25].labels(measurement=label_name).set(value)
-
-    logger.debug(f"PM25 data={aqdata}")
 
 
 def acquire_temperature(gauges, owfsdir):
