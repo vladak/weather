@@ -3,7 +3,7 @@
 # Weather
 
 Simple weather monitoring Python script. Collects these metrics:
-  - temperature data using OWFS
+  - temperature data using [OWFS](https://www.owfs.org/)
   - barometric pressure data using [BMP280](https://www.adafruit.com/product/2651) sensor connected via I2C
   - CO2 and humidity using the [SCD-40](https://www.adafruit.com/product/5187) sensor
   - air particles using the [PMSA003I](https://www.adafruit.com/product/4632) sensor
