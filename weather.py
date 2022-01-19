@@ -58,7 +58,7 @@ def sensor_loop(sleep_timeout, owfsdir, height):
         ),
         HUMIDITY: Gauge("humidity_pct", "Humidity inside in percent"),
         CO2: Gauge("co2_ppm", "CO2 in ppm"),
-        PM25: Gauge("pm25", "Particles in air", ['measurement']),
+        PM25: Gauge("pm25", "Particles in air", ["measurement"]),
     }
 
     i2c = board.I2C()
