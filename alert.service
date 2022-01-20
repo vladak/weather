@@ -1,0 +1,16 @@
+[Unit]
+Description=Alert Service
+
+[Service]
+User=root
+Group=root
+Type=simple
+WorkingDirectory=/srv/weather
+ExecStart=su -c "/usr/bin/env python3 /srv/weather/alert.py" - pi
+ExecStop=/bin/kill -2 $MAINPID
+TimeoutStartSec=0
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

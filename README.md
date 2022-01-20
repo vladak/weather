@@ -39,7 +39,7 @@ directory.
 
 ## Install
 
-- clone the repository to `/srv/`:
+- clone the repository to `/srv/weather/`:
 ```
   git clone https://github.com/vladak/weather.git /srv/weather
 ```
@@ -50,23 +50,47 @@ directory.
   . ./env/bin/activate
   pip install -r requirements.txt
 ```
-- copy `weather.service` file to `/etc/systemd/system/weather.service`:
+- add the `weather` service`
 ```
-  sudo cp weather.service /etc/systemd/system/weather.service
-```
-- enable the service:
-```
+  sudo cp weather.service /etc/systemd/system/
   sudo systemctl enable weather
-```
-- if the file `/etc/systemd/system/weather.service` changes, run:
-```
+  # if the file `/etc/systemd/system/weather.service` changes, run:
   sudo systemctl daemon-reload
-```
-- to start the service:
-```
+  # start the service:
   sudo systemctl start weather
   sudo systemctl status weather
 ```
+
+## Grafana
+
+- install Grafana (standalone)
+- provision the dashboards from the `.json` files
+- setup Alert notification channels:
+  - PagerDuty
+  - localhost:8333 (for the Alert handler below)
+
+### Alert handler
+
+- connect the [USB speaker](https://www.adafruit.com/product/3369)
+- install pre-requisites:
+```
+  sudo apt-get install -y mpg123
+```
+- setup sound card in Alsa config `/usr/share/alsa/alsa.conf` by changing:
+```
+defaults.ctl.card 1
+defaults.pcm.card 1
+```
+- copy some MP3 files (with `.mp3` suffix) to `/srv/weather/`
+- install the service
+```
+  sudo cp /srv/weather/alert.service /etc/systemd/system/
+  sudo systemctl enable alert
+  sudo systemctl daemon-reload
+  sudo systemctl start alert
+  sudo systemctl status alert
+```
+- test the alert in Grafana (it should start playing the MP3 file)
 
 ## Links
 
@@ -74,3 +98,4 @@ directory.
 
 - SCD-40 guide: https://learn.adafruit.com/adafruit-scd-40-and-scd-41/python-circuitpython
 - PMSA003I guide: https://github.com/adafruit/Adafruit_CircuitPython_PM25
+- USB card with Raspberry Pi: https://learn.adafruit.com/usb-audio-cards-with-a-raspberry-pi/updating-alsa-config
