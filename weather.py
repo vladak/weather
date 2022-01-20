@@ -105,7 +105,7 @@ def acquire_pm25(gauges, pm25_sensor):
 
     for name, value in aqdata.items():
         label_name = name.replace(" ", "_")
-        logger.info(f"setting PM25 gauge with label={label_name} to {value}")
+        logger.debug(f"setting PM25 gauge with label={label_name} to {value}")
         gauges[PM25].labels(measurement=label_name).set(value)
 
 
@@ -131,7 +131,7 @@ def acquire_temperature(gauges, owfsdir):
                 continue
 
         if temp and sensor_name in sensor_names_to_record:
-            logger.info(f"{sensor_name} temp={temp}")
+            logger.debug(f"{sensor_name} temp={temp}")
             gauges[sensor_name].set(temp)
 
             if sensor_name == TERASA:
@@ -154,11 +154,11 @@ def acquire_pressure(bmp_sensor, gauges, height, outside_temp):
 
     pressure_val = bmp_sensor.pressure
     if pressure_val and pressure_val > 0:
-        logger.info(f"pressure={pressure_val}")
+        logger.debug(f"pressure={pressure_val}")
         gauges[PRESSURE].set(pressure_val)
         if outside_temp:
             pressure_val = sea_level_pressure(pressure_val, outside_temp, height)
-            logger.info(f"pressure at sea level={pressure_val}")
+            logger.debug(f"pressure at sea level={pressure_val}")
             gauges[PRESSURE_SEA].set(pressure_val)
 
 
@@ -174,11 +174,12 @@ def acquire_scd4x(gauges, scd4x_sensor):
 
     co2_ppm = scd4x_sensor.CO2
     if co2_ppm:
-        logger.info(f"CO2 ppm={co2_ppm}")
+        logger.debug(f"CO2 ppm={co2_ppm}")
         gauges[CO2].set(co2_ppm)
+
     humidity = scd4x_sensor.relative_humidity
     if humidity:
-        logger.info(f"humidity={humidity:.1f}%")
+        logger.debug(f"humidity={humidity:.1f}%")
         gauges[HUMIDITY].set(humidity)
 
 
