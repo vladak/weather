@@ -69,6 +69,10 @@ directory.
   - PagerDuty
   - localhost:8333 (for the Alert handler below)
 
+The Weather dashboard looks like this:
+
+![Weather dashboard](/img/grafana-weather.jpg)
+
 ### Alert handler
 
 - connect the [USB speaker](https://www.adafruit.com/product/3369)
