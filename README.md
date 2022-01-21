@@ -99,6 +99,7 @@ e.g. when the CO2 metric rises above given level (time to open a window).
   sudo systemctl status alert
 ```
 - test the alert in Grafana (it should start playing the MP3 file)
+  - go to Alerts -> Notification channels and hit 'Test'
 
 ## Links
 
