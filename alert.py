@@ -15,12 +15,12 @@ import sys
 from pprint import pprint
 from datetime import datetime
 from subprocess import TimeoutExpired
-from glob import glob
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 
 file_to_play = None
+
 
 # TODO: figure out a way how to parametrize the class with file/time/timeout
 #       (subclassing ?)
@@ -128,7 +128,7 @@ def run_server(port, server_class=HTTPServer, handler_class=SrvClass):
 
 if __name__ == "__main__":
     # TODO: argparse
-    server_port=8333
+    server_port = 8333
 
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
