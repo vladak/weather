@@ -27,8 +27,6 @@ MPG123 = "mpg123"
 FILE_TO_PLAY = None
 
 
-# TODO: figure out a way how to parametrize the class with file/time/timeout
-#       (subclassing ?)
 class SrvClass(BaseHTTPRequestHandler):
     """
     This class is meant to handle POST requests from Grafana,
