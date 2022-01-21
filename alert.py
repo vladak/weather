@@ -107,6 +107,15 @@ def handle_alert(payload):
         logger.info("no payload, ignoring")
         return
 
+    state = payload.get('state')
+    if state is None:
+        logger.info("No state in the alert payload: {payload}")
+        return
+
+    if state != "alerting":
+        logger.info("state not alerting in the alert payload: {payload}")
+        return
+
     thread = threading.Thread(target=play_mp3, args=(FILE_TO_PLAY,), daemon=True)
     thread.start()
 
