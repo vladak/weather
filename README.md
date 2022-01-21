@@ -84,6 +84,8 @@ The Weather dashboard looks like this:
 
 ![Weather dashboard](/img/grafana-weather.jpg)
 
+In the graphs one can see the CO2 metric above the threshold. This generated an alert.
+
 ### Alert handler
 
 The goal is to play a sound when Grafana produces an alert that matches certain criteria,
