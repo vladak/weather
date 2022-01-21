@@ -6,6 +6,7 @@ matches a condition.
 
 """
 
+import argparse
 import os
 import subprocess
 import logging
@@ -18,8 +19,10 @@ from subprocess import TimeoutExpired
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
+from logutil import LogLevelAction
 
-file_to_play = None
+
+FILE_TO_PLAY = None
 
 
 # TODO: figure out a way how to parametrize the class with file/time/timeout
@@ -34,6 +37,7 @@ class SrvClass(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'text/html')
         self.end_headers()
 
+    # pylint: disable=invalid-name
     def do_POST(self):
         """
         Handle POST request. In theory requests not matching the expected
@@ -76,7 +80,7 @@ class SrvClass(BaseHTTPRequestHandler):
         try:
             handle_alert(payload)
         except OSError as exc:
-            logger.error(f"Got exception while trying to play {file_to_play}: {exc}")
+            logger.error(f"Got exception while trying to play {FILE_TO_PLAY}: {exc}")
 
 
 def play_mp3(path, timeout=30):
@@ -106,7 +110,7 @@ def handle_alert(payload):
     """
     # TODO: filter based on payload
 
-    thread = threading.Thread(target=play_mp3, args=(file_to_play,), daemon=True)
+    thread = threading.Thread(target=play_mp3, args=(FILE_TO_PLAY,), daemon=True)
     thread.start()
 
 
@@ -130,11 +134,34 @@ def run_server(port, server_class=HTTPServer, handler_class=SrvClass):
 
 
 def main():
-    # TODO: argparse
-    server_port = 8333
+    """
+    command line run
+    """
+    parser = argparse.ArgumentParser(
+        description="weather sensor collector",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "-p",
+        "--port",
+        default=8333,
+        type=int,
+        help="port to listen on for HTTP requests",
+    )
+    parser.add_argument(
+        "-l",
+        "--loglevel",
+        action=LogLevelAction,
+        help='Set log level (e.g. "ERROR")',
+        default=logging.INFO,
+    )
+    args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO)
+    server_port = args.port
+
+    logging.basicConfig()
     logger = logging.getLogger(__name__)
+    logger.setLevel(args.loglevel)
 
     # TODO: check that mpg123 is installed and in PATH
 
@@ -147,8 +174,8 @@ def main():
         logger.error(f"Cannot find a file with {suffix} in {dir_to_search}")
         sys.exit(1)
 
-    file_to_play = os.path.join(dir_to_search, file_list[0])
-    logger.info(f"Selected file to play: '{file_to_play}'")
+    FILE_TO_PLAY = os.path.join(dir_to_search, file_list[0])
+    logger.info(f"Selected file to play: '{FILE_TO_PLAY}'")
 
     run_server(server_port)
 
