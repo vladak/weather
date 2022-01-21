@@ -13,7 +13,7 @@ import logging
 import json
 import threading
 import sys
-from pprint import pprint
+from pprint import pformat
 from datetime import datetime
 from subprocess import TimeoutExpired
 from shutil import which
@@ -73,8 +73,7 @@ class SrvClass(BaseHTTPRequestHandler):
 
         data_utf8 = post_data.decode('utf-8')
         payload = json.loads(data_utf8)
-        # TODO print using logger.debug()
-        pprint(payload)
+        logger.debug(pformat(payload))
 
         self._set_response()
         self.wfile.write("POST request for {}".format(self.path).encode('utf-8'))
