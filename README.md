@@ -70,7 +70,21 @@ can be scraped by Prometheus.
 
 ## Prometheus
 
-TBD
+- install prometheus
+```
+  TBD
+  sudo systemctl enable prometheus
+  sudo systemctl start prometheus
+```
+- add the weather app to `/etc/prometheus/prometheus.yml`:
+```yml
+scrape_configs:
+  # ...
+
+  - job_name: weather
+    static_configs:
+      - targets: ['localhost:8111']
+```
 
 ## Grafana
 
