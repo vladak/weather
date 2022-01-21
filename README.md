@@ -77,8 +77,8 @@ TBD
 - install Grafana (standalone)
 - provision the dashboards from the `.json` files
 - setup Alert notification channels:
-  - PagerDuty
-  - localhost:8333 (for the Alert handler below)
+  - [PagerDuty](https://www.pagerduty.com/)
+  - `localhost:8333` (for the _Alert handler_ below)
 
 The Weather dashboard looks like this:
 
