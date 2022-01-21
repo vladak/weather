@@ -48,25 +48,21 @@ class SrvClass(BaseHTTPRequestHandler):
 
         if not self.headers.get('User-Agent') == "Grafana":
             logger.info("Not a Grafana POST request, ignoring")
-            # TODO send response
             return
 
         now = datetime.now()
         if now.hour < 8 or now.hour > 23:
             logger.info("Request received outside of open time window, ignoring")
-            # TODO send response
             return
 
         content_length = int(self.headers['Content-Length'])
         if content_length == 0:
             logger.info("Empty content, ignoring")
-            # TODO send response
             return
 
         post_data = self.rfile.read(content_length)
         if post_data is None:
             logger.info("Empty data, ignoring")
-            # TODO send response
             return
 
         data_utf8 = post_data.decode('utf-8')
