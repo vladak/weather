@@ -80,10 +80,11 @@ The Weather dashboard looks like this:
 ```
   sudo apt-get install -y mpg123
 ```
-- setup sound card in Alsa config `/usr/share/alsa/alsa.conf` by changing:
+- setup sound card in Alsa config:
 ```
-defaults.ctl.card 1
-defaults.pcm.card 1
+  sed -i /usr/share/alsa/alsa.conf \
+      -e 's/^defaults.ctl.card 0/defaults.ctl.card 1/' \
+      -e 's/^defaults.pcm.card 0/defaults.pcm.card 1/'
 ```
 - copy some MP3 files (with `.mp3` suffix) to `/srv/weather/`
 - install the service
