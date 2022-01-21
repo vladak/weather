@@ -70,7 +70,7 @@ class SrvClass(BaseHTTPRequestHandler):
         logger.debug(pformat(payload))
 
         self._set_response()
-        self.wfile.write("POST request for {}".format(self.path).encode('utf-8'))
+        self.wfile.write(f"POST request for {self.path}".encode('utf-8'))
 
         try:
             handle_alert(payload)
@@ -89,12 +89,12 @@ def play_mp3(path, timeout=30):
         raise OSError(f"file '{path}' does not exist")
 
     logger.info(f"Playing {path}")
-    proc = subprocess.Popen([MPG123, '-q', path])
-    try:
-        _, _ = proc.communicate(timeout=timeout)
-    except TimeoutExpired:
-        proc.terminate()
-        _, _ = proc.communicate()
+    with subprocess.Popen([MPG123, '-q', path]) as proc:
+        try:
+            _, _ = proc.communicate(timeout=timeout)
+        except TimeoutExpired:
+            proc.terminate()
+            _, _ = proc.communicate()
 
 
 def handle_alert(payload):
