@@ -75,6 +75,9 @@ The Weather dashboard looks like this:
 
 ### Alert handler
 
+The goal is to play a sound when Grafana produces an alert that matches certain criteria,
+e.g. when the CO2 metric rises above given level (time to open a window).
+
 - connect the [USB speaker](https://www.adafruit.com/product/3369)
 - install pre-requisites:
 ```
