@@ -112,6 +112,8 @@ def handle_alert(payload):
         logger.info("No state in the alert payload: {payload}")
         return
 
+    # Technically, "pending" state counts too, however playing the sound
+    # too often might be too obnoxious.
     if state != "alerting":
         logger.info("state not alerting in the alert payload: {payload}")
         return
