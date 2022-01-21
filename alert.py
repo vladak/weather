@@ -7,21 +7,19 @@ matches a condition.
 """
 
 import argparse
+import json
+import logging
 import os
 import subprocess
-import logging
-import json
-import threading
 import sys
-from pprint import pformat
+import threading
 from datetime import datetime
-from subprocess import TimeoutExpired
-from shutil import which
-
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from pprint import pformat
+from shutil import which
+from subprocess import TimeoutExpired
 
 from logutil import LogLevelAction
-
 
 MPG123 = "mpg123"
 FILE_TO_PLAY = None
