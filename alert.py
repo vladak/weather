@@ -107,7 +107,7 @@ def handle_alert(payload):
         logger.info("no payload, ignoring")
         return
 
-    state = payload.get('state')
+    state = payload.get("state")
     if state is None:
         logger.info("No state in the alert payload: {payload}")
         return
