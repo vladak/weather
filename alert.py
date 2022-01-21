@@ -105,7 +105,12 @@ def handle_alert(payload):
     """
     Alert handling
     """
-    # TODO: filter based on payload
+
+    logger = logging.getLogger(__name__)
+
+    if payload is None:
+        logger.info("no payload, ignoring")
+        return
 
     thread = threading.Thread(target=play_mp3, args=(FILE_TO_PLAY,), daemon=True)
     thread.start()
@@ -177,6 +182,7 @@ def main():
         logger.error("Cannot find mpg123 executable")
         sys.exit(1)
 
+    # pylint: disable=global-statement
     global MPG123
     MPG123 = args.mpg123
 
@@ -189,6 +195,7 @@ def main():
         logger.error(f"Cannot find a file with {suffix} in {dir_to_search}")
         sys.exit(1)
 
+    # pylint: disable=global-statement
     global FILE_TO_PLAY
     FILE_TO_PLAY = os.path.join(dir_to_search, file_list[0])
     logger.info(f"Selected file to play: '{FILE_TO_PLAY}'")
