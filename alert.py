@@ -70,15 +70,13 @@ class SrvClass(BaseHTTPRequestHandler):
         # TODO print using logger.debug()
         pprint(payload)
 
-        # TODO: filter based on payload
-
         self._set_response()
         self.wfile.write("POST request for {}".format(self.path).encode('utf-8'))
 
         try:
-            handle_alert()
-        except OSError as e:
-            logger.error(f"Got exception while trying to play {file_to_play}: {e}")
+            handle_alert(payload)
+        except OSError as exc:
+            logger.error(f"Got exception while trying to play {file_to_play}: {exc}")
 
 
 def play_mp3(path, timeout=30):
@@ -96,13 +94,18 @@ def play_mp3(path, timeout=30):
     logger.info(f"Playing {path}")
     proc = subprocess.Popen(['mpg123', '-q', path])
     try:
-        outs, errs = proc.communicate(timeout=timeout)
+        _, _ = proc.communicate(timeout=timeout)
     except TimeoutExpired:
         proc.terminate()
-        outs, errs = proc.communicate()
+        _, _ = proc.communicate()
 
 
-def handle_alert():
+def handle_alert(payload):
+    """
+    Alert handling
+    """
+    # TODO: filter based on payload
+
     thread = threading.Thread(target=play_mp3, args=(file_to_play,), daemon=True)
     thread.start()
 
@@ -126,7 +129,7 @@ def run_server(port, server_class=HTTPServer, handler_class=SrvClass):
     logger.info('Stopping HTTP server...')
 
 
-if __name__ == "__main__":
+def main():
     # TODO: argparse
     server_port = 8333
 
@@ -148,3 +151,7 @@ if __name__ == "__main__":
     logger.info(f"Selected file to play: '{file_to_play}'")
 
     run_server(server_port)
+
+
+if __name__ == "__main__":
+    main()
