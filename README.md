@@ -13,8 +13,6 @@ Simple weather monitoring Python script. Collects these metrics:
 
 The I2C sensors are connected to the Raspberry Pi via the [SparkFun Qwiic / STEMMA QT HAT](https://www.adafruit.com/product/4688) that offers 4 [Stemma Qt](https://learn.adafruit.com/introducing-adafruit-stemma-qt/what-is-stemma-qt) ports.
 
-Uses [Prometheus web server](https://github.com/prometheus/client_python) to export the data.
-
 ## Setup
 
 ### I2C
@@ -42,7 +40,11 @@ kernel updates and after reboot the sensors were available under the `/run/owfs`
 directory.
 
 
-## Install
+## Install the weather service
+
+This is a simple Python program that collects the metrics and presents them via 
+[Prometheus web server](https://github.com/prometheus/client_python) so they
+can be scraped by Prometheus.
 
 - clone the repository to `/srv/weather/`:
 ```
@@ -65,6 +67,10 @@ directory.
   sudo systemctl start weather
   sudo systemctl status weather
 ```
+
+## Prometheus
+
+TBD
 
 ## Grafana
 
