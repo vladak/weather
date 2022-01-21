@@ -16,12 +16,14 @@ import sys
 from pprint import pprint
 from datetime import datetime
 from subprocess import TimeoutExpired
+from shutil import which
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from logutil import LogLevelAction
 
 
+MPG123 = "mpg123"
 FILE_TO_PLAY = None
 
 
@@ -96,7 +98,7 @@ def play_mp3(path, timeout=30):
         raise OSError(f"file '{path}' does not exist")
 
     logger.info(f"Playing {path}")
-    proc = subprocess.Popen(['mpg123', '-q', path])
+    proc = subprocess.Popen([MPG123, '-q', path])
     try:
         _, _ = proc.communicate(timeout=timeout)
     except TimeoutExpired:
@@ -155,6 +157,11 @@ def main():
         help='Set log level (e.g. "ERROR")',
         default=logging.INFO,
     )
+    parser.add_argument(
+        "--mpg123",
+        help='Path to the mpg123 executable',
+        default="mpg123",
+    )
     args = parser.parse_args()
 
     server_port = args.port
@@ -163,7 +170,12 @@ def main():
     logger = logging.getLogger(__name__)
     logger.setLevel(args.loglevel)
 
-    # TODO: check that mpg123 is installed and in PATH
+    if which(args.mpg123) is None:
+        logger.error("Cannot find mpg123 executable")
+        sys.exit(1)
+
+    global MPG123
+    MPG123 = args.mpg123
 
     # Search base directory of the program for files to play.
     dir_to_search = os.path.dirname(os.path.realpath(__file__))
@@ -174,6 +186,7 @@ def main():
         logger.error(f"Cannot find a file with {suffix} in {dir_to_search}")
         sys.exit(1)
 
+    global FILE_TO_PLAY
     FILE_TO_PLAY = os.path.join(dir_to_search, file_list[0])
     logger.info(f"Selected file to play: '{FILE_TO_PLAY}'")
 
