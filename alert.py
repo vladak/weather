@@ -32,9 +32,10 @@ class SrvClass(BaseHTTPRequestHandler):
     This class is meant to handle POST requests from Grafana,
     specifically requests to alert.
     """
+
     def _set_response(self):
         self.send_response(200)
-        self.send_header('Content-type', 'text/html')
+        self.send_header("Content-type", "text/html")
         self.end_headers()
 
     # pylint: disable=invalid-name
@@ -46,7 +47,7 @@ class SrvClass(BaseHTTPRequestHandler):
         """
         logger = logging.getLogger(__name__)
 
-        if not self.headers.get('User-Agent') == "Grafana":
+        if not self.headers.get("User-Agent") == "Grafana":
             logger.info("Not a Grafana POST request, ignoring")
             return
 
@@ -55,7 +56,7 @@ class SrvClass(BaseHTTPRequestHandler):
             logger.info("Request received outside of open time window, ignoring")
             return
 
-        content_length = int(self.headers['Content-Length'])
+        content_length = int(self.headers["Content-Length"])
         if content_length == 0:
             logger.info("Empty content, ignoring")
             return
@@ -65,12 +66,12 @@ class SrvClass(BaseHTTPRequestHandler):
             logger.info("Empty data, ignoring")
             return
 
-        data_utf8 = post_data.decode('utf-8')
+        data_utf8 = post_data.decode("utf-8")
         payload = json.loads(data_utf8)
         logger.debug(pformat(payload))
 
         self._set_response()
-        self.wfile.write(f"POST request for {self.path}".encode('utf-8'))
+        self.wfile.write(f"POST request for {self.path}".encode("utf-8"))
 
         try:
             handle_alert(payload)
@@ -89,7 +90,7 @@ def play_mp3(path, timeout=30):
         raise OSError(f"file '{path}' does not exist")
 
     logger.info(f"Playing {path}")
-    with subprocess.Popen([MPG123, '-q', path]) as proc:
+    with subprocess.Popen([MPG123, "-q", path]) as proc:
         try:
             _, _ = proc.communicate(timeout=timeout)
         except TimeoutExpired:
@@ -118,9 +119,9 @@ def run_server(port, server_class=HTTPServer, handler_class=SrvClass):
     """
     logger = logging.getLogger(__name__)
 
-    server_address = ('localhost', port)
+    server_address = ("localhost", port)
     httpd = server_class(server_address, handler_class)
-    logger.info('Starting HTTP server...')
+    logger.info("Starting HTTP server...")
 
     try:
         httpd.serve_forever()
@@ -128,7 +129,7 @@ def run_server(port, server_class=HTTPServer, handler_class=SrvClass):
         pass
 
     httpd.server_close()
-    logger.info('Stopping HTTP server...')
+    logger.info("Stopping HTTP server...")
 
 
 def parse_args():
@@ -156,7 +157,7 @@ def parse_args():
     )
     parser.add_argument(
         "--mpg123",
-        help='Path to the mpg123 executable',
+        help="Path to the mpg123 executable",
         default="mpg123",
     )
 
@@ -185,8 +186,11 @@ def main():
     # Search base directory of the program for files to play.
     dir_to_search = os.path.dirname(os.path.realpath(__file__))
     suffix = ".mp3"
-    file_list = [f for f in os.listdir(dir_to_search)
-                 if os.path.isfile(os.path.join(dir_to_search, f)) and f.endswith(suffix)]
+    file_list = [
+        f
+        for f in os.listdir(dir_to_search)
+        if os.path.isfile(os.path.join(dir_to_search, f)) and f.endswith(suffix)
+    ]
     if len(file_list) == 0:
         logger.error(f"Cannot find a file with {suffix} in {dir_to_search}")
         sys.exit(1)
