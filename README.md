@@ -7,11 +7,11 @@ Simple weather monitoring Python script. Collects these metrics:
 | *Metric* | *Sensor* | *Sensor access* |
 | ------------- |:-------------:| :-------------: |
 | temperature data | 1-wire | [OWFS](https://www.owfs.org/) |
-| barometric pressure data | [BMP280](https://www.adafruit.com/product/2651) | I2C |
-| CO2 and humidity | [SCD-40](https://www.adafruit.com/product/5187) | I2C |
-| air particles | [PMSA003I](https://www.adafruit.com/product/4632) | I2C |
+| barometric pressure data | [BMP280](https://www.adafruit.com/product/2651) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) |
+| CO2 and humidity | [SCD-40](https://www.adafruit.com/product/5187) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) |
+| air particles | [PMSA003I](https://www.adafruit.com/product/4632) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) |
 
-The I2C sensors are connected to the Raspberry Pi using the [SparkFun Qwiic / STEMMA QT HAT](https://www.adafruit.com/product/4688) that offers 4 Stemma Qt ports.
+The I2C sensors are connected to the Raspberry Pi via the [SparkFun Qwiic / STEMMA QT HAT](https://www.adafruit.com/product/4688) that offers 4 [Stemma Qt](https://learn.adafruit.com/introducing-adafruit-stemma-qt/what-is-stemma-qt) ports.
 
 Uses [Prometheus web server](https://github.com/prometheus/client_python) to export the data.
 
