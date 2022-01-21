@@ -57,7 +57,7 @@ can be scraped by Prometheus.
   . ./env/bin/activate
   pip install -r requirements.txt
 ```
-- add the `weather` service`
+- add the `weather` service
 ```
   sudo cp weather.service /etc/systemd/system/
   sudo systemctl enable weather
