@@ -3,10 +3,15 @@
 # Weather
 
 Simple weather monitoring Python script. Collects these metrics:
-  - temperature data using [OWFS](https://www.owfs.org/)
-  - barometric pressure data using [BMP280](https://www.adafruit.com/product/2651) sensor connected via I2C
-  - CO2 and humidity using the [SCD-40](https://www.adafruit.com/product/5187) sensor
-  - air particles using the [PMSA003I](https://www.adafruit.com/product/4632) sensor
+
+| *Metric* | *Sensor* | *Sensor access* |
+| ------------- |:-------------:| :-------------: |
+| temperature data | 1-wire | [OWFS](https://www.owfs.org/) |
+| barometric pressure data | [BMP280](https://www.adafruit.com/product/2651) | I2C |
+| CO2 and humidity | [SCD-40](https://www.adafruit.com/product/5187) | I2C |
+| air particles | [PMSA003I](https://www.adafruit.com/product/4632) | I2C |
+
+The I2C sensors are connected to the Raspberry Pi using the [SparkFun Qwiic / STEMMA QT HAT](https://www.adafruit.com/product/4688) that offers 4 Stemma Qt ports.
 
 Uses [Prometheus web server](https://github.com/prometheus/client_python) to export the data.
 
