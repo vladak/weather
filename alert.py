@@ -88,8 +88,6 @@ def play_mp3(path, timeout=30):
     """
     Play given file via mpg123.
     """
-    # TODO: ideally, this should enqueue the request to play to handle multiple
-    #       alerts happening around the same time
 
     logger = logging.getLogger(__name__)
 
