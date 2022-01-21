@@ -61,7 +61,7 @@ can be scraped by Prometheus.
 ```
   sudo cp weather.service /etc/systemd/system/
   sudo systemctl enable weather
-  # if the file `/etc/systemd/system/weather.service` changes, run:
+  # if the file /etc/systemd/system/weather.service changes, run:
   sudo systemctl daemon-reload
   # start the service:
   sudo systemctl start weather
