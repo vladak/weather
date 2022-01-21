@@ -132,12 +132,13 @@ def run_server(port, server_class=HTTPServer, handler_class=SrvClass):
     logger.info('Stopping HTTP server...')
 
 
-def main():
+def parse_args():
     """
-    command line run
+    Parse command line arguments
     """
+
     parser = argparse.ArgumentParser(
-        description="weather sensor collector",
+        description="Play a mp3 when Grafana Alert is received via POST req",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -159,8 +160,15 @@ def main():
         help='Path to the mpg123 executable',
         default="mpg123",
     )
-    args = parser.parse_args()
 
+    return parser.parse_args()
+
+
+def main():
+    """
+    command line run
+    """
+    args = parse_args()
     server_port = args.port
 
     logging.basicConfig()
