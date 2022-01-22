@@ -93,7 +93,7 @@ def play_mp3(timeout=30):
         if not os.path.exists(path):
             raise OSError(f"file '{path}' does not exist")
 
-        logger.info(f"Playing {path}")
+        logger.info(f"Playing '{path}'")
         with subprocess.Popen([MPG123, "-q", path]) as proc:
             try:
                 _, _ = proc.communicate(timeout=timeout)
@@ -177,6 +177,12 @@ def parse_args():
         help="Path to the mpg123 executable",
         default="mpg123",
     )
+    parser.add_argument(
+        "-t",
+        "--timeout",
+        help="Timeout in seconds to interrupt playing of one mp3",
+        default=30,
+    )
 
     return parser.parse_args()
 
@@ -217,7 +223,7 @@ def main():
     FILE_TO_PLAY = os.path.join(dir_to_search, file_list[0])
     logger.info(f"Selected file to play: '{FILE_TO_PLAY}'")
 
-    threading.Thread(target=play_mp3, daemon=True).start()
+    threading.Thread(target=play_mp3, args=(args.timeout, ), daemon=True).start()
 
     run_server(server_port)
 
