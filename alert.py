@@ -78,17 +78,22 @@ class SrvClass(BaseHTTPRequestHandler):
         try:
             payload = json.loads(data_utf8)
             logger.debug(f"got payload: {pformat(payload)}")
-        except json.JSONDecodeError as e:
-            logger.error(f"failed to parse JSON from payload data: {data_utf8}")
+        except json.JSONDecodeError as exc:
+            logger.error(f"failed to parse JSON from payload data: {data_utf8}: {exc}")
             self._set_response(400)
             return
 
         try:
-            handle_grafana_alert(payload)
+            ret = handle_grafana_alert(payload)
         except OSError as exc:
             logger.error(f"Got exception while trying to play {FILE_TO_PLAY}: {exc}")
+            self._set_response(400)
+            return
 
-        self._set_response(200)
+        if ret:
+            self._set_response(200)
+        else:
+            self._set_response(400)
         self.wfile.write(f"POST request for {self.path}".encode("utf-8"))
 
 
@@ -121,35 +126,37 @@ def play_mp3(timeout=30):
 def handle_grafana_alert(payload):
     """
     Alert handling. Expects Grafana alert payload (JSON).
+    :return True if successful, False otherwise
     """
 
     logger = logging.getLogger(__name__)
 
     if payload is None:
         logger.error("no payload, ignoring")
-        return
+        return False
 
     state = payload.get("state")
     if state is None:
         logger.error("No state in the alert payload: {payload}")
-        return
+        return False
 
     # Technically, "pending" state counts too, however playing the sound
     # too often might be too obnoxious.
     if state != "alerting":
         logger.info("state not alerting in the alert payload: {payload}")
-        return
+        return True
 
     rule_name = payload.get("ruleName")
     if rule_name is None:
         logger.error("No 'ruleName' in payload")
-        return
+        return False
 
     if RULE_NAME_MATCH in rule_name:
         logger.error(f"Payload does not contain 'ruleName' with '{RULE_NAME_MATCH}'")
-        return
+        return False
 
     play_queue.put(FILE_TO_PLAY)
+    return True
 
 
 def run_server(port, server_class=HTTPServer, handler_class=SrvClass):
