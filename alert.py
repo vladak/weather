@@ -68,8 +68,12 @@ class SrvClass(BaseHTTPRequestHandler):
             return
 
         data_utf8 = post_data.decode("utf-8")
-        payload = json.loads(data_utf8)
-        logger.debug(pformat(payload))
+        try:
+            payload = json.loads(data_utf8)
+            logger.debug(f"got payload: {pformat(payload)}")
+        except json.JSONDecodeError as e:
+            logger.error(f"failed to parse JSON from payload data: {data_utf8}")
+            return
 
         self._set_response()
         self.wfile.write(f"POST request for {self.path}".encode("utf-8"))
