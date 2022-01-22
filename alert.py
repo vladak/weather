@@ -126,12 +126,12 @@ def handle_grafana_alert(payload):
     logger = logging.getLogger(__name__)
 
     if payload is None:
-        logger.info("no payload, ignoring")
+        logger.error("no payload, ignoring")
         return
 
     state = payload.get("state")
     if state is None:
-        logger.info("No state in the alert payload: {payload}")
+        logger.error("No state in the alert payload: {payload}")
         return
 
     # Technically, "pending" state counts too, however playing the sound
@@ -142,11 +142,11 @@ def handle_grafana_alert(payload):
 
     rule_name = payload.get("ruleName")
     if rule_name is None:
-        logger.info("No 'ruleName' in payload")
+        logger.error("No 'ruleName' in payload")
         return
 
     if RULE_NAME_MATCH in rule_name:
-        logger.info(f"Payload does not contain 'ruleName' with '{RULE_NAME_MATCH}'")
+        logger.error(f"Payload does not contain 'ruleName' with '{RULE_NAME_MATCH}'")
         return
 
     play_queue.put(FILE_TO_PLAY)
