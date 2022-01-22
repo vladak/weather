@@ -13,6 +13,7 @@ import os
 import subprocess
 import sys
 import threading
+import queue
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pprint import pformat
@@ -23,6 +24,7 @@ from logutil import LogLevelAction
 
 MPG123 = "mpg123"
 FILE_TO_PLAY = None
+play_queue = queue.Queue()
 
 
 class SrvClass(BaseHTTPRequestHandler):
@@ -77,23 +79,30 @@ class SrvClass(BaseHTTPRequestHandler):
             logger.error(f"Got exception while trying to play {FILE_TO_PLAY}: {exc}")
 
 
-def play_mp3(path, timeout=30):
+def play_mp3(timeout=30):
     """
-    Play given file via mpg123.
+    Worker to play files in the play_queue via mpg123.
     """
 
     logger = logging.getLogger(__name__)
 
-    if not os.path.exists(path):
-        raise OSError(f"file '{path}' does not exist")
+    while True:
+        path = play_queue.get()
+        logger.debug(f"Working on '{path}'")
 
-    logger.info(f"Playing {path}")
-    with subprocess.Popen([MPG123, "-q", path]) as proc:
-        try:
-            _, _ = proc.communicate(timeout=timeout)
-        except TimeoutExpired:
-            proc.terminate()
-            _, _ = proc.communicate()
+        if not os.path.exists(path):
+            raise OSError(f"file '{path}' does not exist")
+
+        logger.info(f"Playing {path}")
+        with subprocess.Popen([MPG123, "-q", path]) as proc:
+            try:
+                _, _ = proc.communicate(timeout=timeout)
+            except TimeoutExpired:
+                proc.terminate()
+                _, _ = proc.communicate()
+
+        logger.debug(f"Finished '{path}'")
+        play_queue.task_done()
 
 
 def handle_grafana_alert(payload):
@@ -118,8 +127,7 @@ def handle_grafana_alert(payload):
         logger.info("state not alerting in the alert payload: {payload}")
         return
 
-    thread = threading.Thread(target=play_mp3, args=(FILE_TO_PLAY,), daemon=True)
-    thread.start()
+    play_queue.put(FILE_TO_PLAY)
 
 
 def run_server(port, server_class=HTTPServer, handler_class=SrvClass):
@@ -208,6 +216,8 @@ def main():
     global FILE_TO_PLAY
     FILE_TO_PLAY = os.path.join(dir_to_search, file_list[0])
     logger.info(f"Selected file to play: '{FILE_TO_PLAY}'")
+
+    threading.Thread(target=play_mp3, daemon=True).start()
 
     run_server(server_port)
 
