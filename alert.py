@@ -152,7 +152,8 @@ def handle_grafana_alert(payload):
         return False
 
     if RULE_NAME_MATCH in rule_name:
-        logger.error(f"'ruleName' value '{rule_name}' in the payload does not contain '{RULE_NAME_MATCH}': {payload}")
+        logger.error(f"'ruleName' value '{rule_name}' in the payload "
+                     "does not contain '{RULE_NAME_MATCH}': {payload}")
         return True
 
     play_queue.put(FILE_TO_PLAY)
