@@ -138,7 +138,7 @@ def run_server(port, server_class=HTTPServer, handler_class=SrvClass):
 
     server_address = ("localhost", port)
     httpd = server_class(server_address, handler_class)
-    logger.info("Starting HTTP server...")
+    logger.info(f"Starting HTTP server on port {port}...")
 
     try:
         httpd.serve_forever()
