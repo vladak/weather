@@ -25,6 +25,7 @@ from logutil import LogLevelAction
 MPG123 = "mpg123"
 FILE_TO_PLAY = None
 play_queue = queue.Queue()
+RULE_NAME_MATCH = None
 
 
 class SrvClass(BaseHTTPRequestHandler):
@@ -127,6 +128,15 @@ def handle_grafana_alert(payload):
         logger.info("state not alerting in the alert payload: {payload}")
         return
 
+    rule_name = payload.get("ruleName")
+    if rule_name is None:
+        logger.info("No 'ruleName' in payload")
+        return
+
+    if RULE_NAME_MATCH in rule_name:
+        logger.info(f"Payload does not contain 'ruleName' with '{RULE_NAME_MATCH}'")
+        return
+
     play_queue.put(FILE_TO_PLAY)
 
 
@@ -183,6 +193,11 @@ def parse_args():
         help="Timeout in seconds to interrupt playing of one mp3",
         default=30,
     )
+    parser.add_argument(
+        "--ruleNameMatch",
+        help="Substring to match in the 'ruleName' key value in the payload",
+        default="CO2",
+    )
 
     return parser.parse_args()
 
@@ -205,6 +220,10 @@ def main():
     # pylint: disable=global-statement
     global MPG123
     MPG123 = args.mpg123
+
+    # pylint: disable=global-statement
+    global RULE_NAME_MATCH
+    RULE_NAME_MATCH = args.ruleNameMatch
 
     # Search base directory of the program for files to play.
     dir_to_search = os.path.dirname(os.path.realpath(__file__))
