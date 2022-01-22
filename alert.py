@@ -10,10 +10,10 @@ import argparse
 import json
 import logging
 import os
+import queue
 import subprocess
 import sys
 import threading
-import queue
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pprint import pformat
@@ -223,7 +223,7 @@ def main():
     FILE_TO_PLAY = os.path.join(dir_to_search, file_list[0])
     logger.info(f"Selected file to play: '{FILE_TO_PLAY}'")
 
-    threading.Thread(target=play_mp3, args=(args.timeout, ), daemon=True).start()
+    threading.Thread(target=play_mp3, args=(args.timeout,), daemon=True).start()
 
     run_server(server_port)
 
