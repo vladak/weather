@@ -34,9 +34,12 @@ class SrvClass(BaseHTTPRequestHandler):
     specifically requests to alert.
     """
 
-    def _set_response(self):
-        self.send_response(200)
-        self.send_header("Content-type", "text/html")
+    def _set_response(self, http_code):
+        """
+        :param http_code: HTTP response code
+        """
+        self.send_response(http_code)
+        self.send_header("Content-type", "text/plain")
         self.end_headers()
 
     # pylint: disable=invalid-name
@@ -50,21 +53,25 @@ class SrvClass(BaseHTTPRequestHandler):
 
         if not self.headers.get("User-Agent") == "Grafana":
             logger.info("Not a Grafana POST request, ignoring")
+            self._set_response(400)
             return
 
         now = datetime.now()
         if now.hour < 8 or now.hour > 23:
             logger.info("Request received outside of open time window, ignoring")
+            self._set_response(200)
             return
 
         content_length = int(self.headers["Content-Length"])
         if content_length == 0:
             logger.info("Empty content, ignoring")
+            self._set_response(400)
             return
 
         post_data = self.rfile.read(content_length)
         if post_data is None:
             logger.info("Empty data, ignoring")
+            self._set_response(400)
             return
 
         data_utf8 = post_data.decode("utf-8")
@@ -73,15 +80,16 @@ class SrvClass(BaseHTTPRequestHandler):
             logger.debug(f"got payload: {pformat(payload)}")
         except json.JSONDecodeError as e:
             logger.error(f"failed to parse JSON from payload data: {data_utf8}")
+            self._set_response(400)
             return
-
-        self._set_response()
-        self.wfile.write(f"POST request for {self.path}".encode("utf-8"))
 
         try:
             handle_grafana_alert(payload)
         except OSError as exc:
             logger.error(f"Got exception while trying to play {FILE_TO_PLAY}: {exc}")
+
+        self._set_response(200)
+        self.wfile.write(f"POST request for {self.path}".encode("utf-8"))
 
 
 def play_mp3(timeout=30):
