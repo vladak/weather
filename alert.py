@@ -72,7 +72,7 @@ class SrvClass(BaseHTTPRequestHandler):
         self.wfile.write(f"POST request for {self.path}".encode("utf-8"))
 
         try:
-            handle_alert(payload)
+            handle_grafana_alert(payload)
         except OSError as exc:
             logger.error(f"Got exception while trying to play {FILE_TO_PLAY}: {exc}")
 
@@ -96,9 +96,9 @@ def play_mp3(path, timeout=30):
             _, _ = proc.communicate()
 
 
-def handle_alert(payload):
+def handle_grafana_alert(payload):
     """
-    Alert handling
+    Alert handling. Expects Grafana alert payload (JSON).
     """
 
     logger = logging.getLogger(__name__)
