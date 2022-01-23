@@ -2,7 +2,9 @@
 Test alert.py
 """
 
-from alert import handle_grafana_alert
+import pytest
+
+from alert import GrafanaPayloadException, handle_grafana_alert
 
 
 def test_payload_no_rule_name_match():
@@ -30,3 +32,12 @@ def test_payload_will_play():
     rule_name = "foo"
     payload = {"ruleName": rule_name, "state": "alerting"}
     assert handle_grafana_alert(payload, rule_name, "foo.mp3")
+
+
+def test_payload_with_exception():
+    """
+    Improperly formed payload should cause GrafanaPayloadException.
+    """
+    payload = {"foo": "bar"}
+    with pytest.raises(GrafanaPayloadException):
+        handle_grafana_alert(payload, "rule_name", "foo.mp3")

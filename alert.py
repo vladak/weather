@@ -122,7 +122,6 @@ class GrafanaPayloadException(Exception):
     """
     Trivial class for passing exceptions from handle_grafana_alert().
     """
-    pass
 
 
 def handle_grafana_alert(payload, rule_name_to_match, file_to_play):
