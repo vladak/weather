@@ -151,7 +151,7 @@ def handle_grafana_alert(payload):
         logger.error(f"No 'ruleName' in payload: {payload}")
         return False
 
-    if RULE_NAME_MATCH not in rule_name:
+    if RULE_NAME_MATCH != rule_name:
         logger.error(
             f"'ruleName' value '{rule_name}' in the payload "
             "does not contain '{RULE_NAME_MATCH}': {payload}"
@@ -217,8 +217,8 @@ def parse_args():
     )
     parser.add_argument(
         "--ruleNameMatch",
-        help="Substring to match in the 'ruleName' key value in the payload",
-        default="CO2",
+        help="Value to match the 'ruleName' key value in the payload (exact match)",
+        default="CO2 alert",
     )
 
     return parser.parse_args()
