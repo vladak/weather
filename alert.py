@@ -22,10 +22,7 @@ from subprocess import TimeoutExpired
 
 from logutil import LogLevelAction
 
-MPG123 = "mpg123"
-FILE_TO_PLAY = None
 play_queue = queue.Queue()
-RULE_NAME_MATCH = None
 
 
 class GrafanaAlertHandler(BaseHTTPRequestHandler):
@@ -83,14 +80,16 @@ class GrafanaAlertHandler(BaseHTTPRequestHandler):
             self._set_response(400)
             return
 
-        if handle_grafana_alert(payload):
+        if handle_grafana_alert(
+            payload, self.server.rule_name_match, self.server.file_to_play
+        ):
             self._set_response(200)
         else:
             self._set_response(400)
         self.wfile.write(f"POST request for {self.path}".encode("utf-8"))
 
 
-def play_mp3(timeout=30):
+def play_mp3(timeout=30, mpg123="mpg123"):
     """
     Worker to play files in the play_queue via mpg123.
     """
@@ -105,7 +104,7 @@ def play_mp3(timeout=30):
             raise OSError(f"file '{path}' does not exist")
 
         logger.info(f"Playing '{path}'")
-        with subprocess.Popen([MPG123, "-q", path]) as proc:
+        with subprocess.Popen([mpg123, "-q", path]) as proc:
             try:
                 _, _ = proc.communicate(timeout=timeout)
             except TimeoutExpired:
@@ -116,7 +115,7 @@ def play_mp3(timeout=30):
         play_queue.task_done()
 
 
-def handle_grafana_alert(payload):
+def handle_grafana_alert(payload, rule_name_to_match, file_to_play):
     """
     Alert handling. Expects Grafana alert payload (JSON).
     :return True if success should be sent to the client, False otherwise.
@@ -144,25 +143,42 @@ def handle_grafana_alert(payload):
         logger.error(f"No 'ruleName' in payload: {payload}")
         return False
 
-    if RULE_NAME_MATCH != rule_name:
+    if rule_name_to_match != rule_name:
         logger.error(
             f"'ruleName' value '{rule_name}' in the payload "
-            "does not contain '{RULE_NAME_MATCH}': {payload}"
+            f"does not contain '{rule_name_to_match}': {payload}"
         )
         return True
 
-    play_queue.put(FILE_TO_PLAY)
+    play_queue.put(file_to_play)
     return True
 
 
-def run_server(port, server_class=HTTPServer, handler_class=GrafanaAlertHandler):
+class GrafanaAlertHttpServer(HTTPServer):
+    """
+    Wrapper class to store parameters used by GrafanaAlertHandler.
+    """
+
+    def __init__(
+        self,
+        server_address,
+        rule_name_match,
+        file_to_play,
+        handler_class=GrafanaAlertHandler,
+    ):
+        super().__init__(server_address, handler_class)
+        self.rule_name_match = rule_name_match
+        self.file_to_play = file_to_play
+
+
+def run_server(port, rule_name_match, file_to_play):
     """
     Start HTTP server, will not return unless interrupted.
     """
     logger = logging.getLogger(__name__)
 
     server_address = ("localhost", port)
-    httpd = server_class(server_address, handler_class)
+    httpd = GrafanaAlertHttpServer(server_address, rule_name_match, file_to_play)
     logger.info(f"Starting HTTP server on port {port}...")
 
     try:
@@ -232,14 +248,6 @@ def main():
         logger.error("Cannot find mpg123 executable")
         sys.exit(1)
 
-    # pylint: disable=global-statement
-    global MPG123
-    MPG123 = args.mpg123
-
-    # pylint: disable=global-statement
-    global RULE_NAME_MATCH
-    RULE_NAME_MATCH = args.ruleNameMatch
-
     # Search base directory of the program for files to play.
     dir_to_search = os.path.dirname(os.path.realpath(__file__))
     suffix = ".mp3"
@@ -252,14 +260,14 @@ def main():
         logger.error(f"Cannot find a file with {suffix} in {dir_to_search}")
         sys.exit(1)
 
-    # pylint: disable=global-statement
-    global FILE_TO_PLAY
-    FILE_TO_PLAY = os.path.join(dir_to_search, file_list[0])
-    logger.info(f"Selected file to play: '{FILE_TO_PLAY}'")
+    file_to_play = os.path.join(dir_to_search, file_list[0])
+    logger.info(f"Selected file to play: '{file_to_play}'")
 
-    threading.Thread(target=play_mp3, args=(args.timeout,), daemon=True).start()
+    threading.Thread(
+        target=play_mp3, args=(args.timeout, args.mpg123), daemon=True
+    ).start()
 
-    run_server(server_port)
+    run_server(server_port, args.ruleNameMatch, file_to_play)
 
 
 if __name__ == "__main__":
