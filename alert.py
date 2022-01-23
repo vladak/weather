@@ -80,12 +80,15 @@ class GrafanaAlertHandler(BaseHTTPRequestHandler):
             self._set_response(400)
             return
 
-        if handle_grafana_alert(
-            payload, self.server.rule_name_match, self.server.file_to_play
-        ):
-            self._set_response(200)
-        else:
+        try:
+            handle_grafana_alert(
+                payload, self.server.rule_name_match, self.server.file_to_play
+            )
+        except GrafanaPayloadException:
             self._set_response(400)
+            return
+
+        self._set_response(200)
         self.wfile.write(f"POST request for {self.path}".encode("utf-8"))
 
 
@@ -115,40 +118,44 @@ def play_mp3(timeout=30, mpg123="mpg123"):
         play_queue.task_done()
 
 
+class GrafanaPayloadException(Exception):
+    pass
+
+
 def handle_grafana_alert(payload, rule_name_to_match, file_to_play):
     """
     Alert handling. Expects Grafana alert payload (JSON).
-    :return True if success should be sent to the client, False otherwise.
+    :return True if the file was enqueued for playing, False otherwise.
     """
 
     logger = logging.getLogger(__name__)
 
     if payload is None:
         logger.error("no payload, ignoring")
-        return False
+        raise GrafanaPayloadException()
 
     state = payload.get("state")
     if state is None:
         logger.error(f"No state in the alert payload: {payload}")
-        return False
+        raise GrafanaPayloadException()
 
     # Technically, "pending" state counts too, however playing the sound
     # too often might be too obnoxious.
     if state != "alerting":
         logger.info(f"state not alerting in the alert payload: {payload}")
-        return True
+        return False
 
     rule_name = payload.get("ruleName")
     if rule_name is None:
         logger.error(f"No 'ruleName' in payload: {payload}")
-        return False
+        raise GrafanaPayloadException()
 
     if rule_name_to_match != rule_name:
         logger.error(
             f"'ruleName' value '{rule_name}' in the payload "
             f"does not contain '{rule_name_to_match}': {payload}"
         )
-        return True
+        return False
 
     play_queue.put(file_to_play)
     return True
