@@ -119,7 +119,7 @@ def play_mp3(timeout=30):
 def handle_grafana_alert(payload):
     """
     Alert handling. Expects Grafana alert payload (JSON).
-    :return True if successful, False otherwise
+    :return True if success should be sent to the client, False otherwise.
     """
 
     logger = logging.getLogger(__name__)
