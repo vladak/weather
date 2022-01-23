@@ -28,7 +28,7 @@ play_queue = queue.Queue()
 RULE_NAME_MATCH = None
 
 
-class SrvClass(BaseHTTPRequestHandler):
+class GrafanaAlertHandler(BaseHTTPRequestHandler):
     """
     This class is meant to handle POST requests from Grafana,
     specifically requests to alert.
@@ -162,7 +162,7 @@ def handle_grafana_alert(payload):
     return True
 
 
-def run_server(port, server_class=HTTPServer, handler_class=SrvClass):
+def run_server(port, server_class=HTTPServer, handler_class=GrafanaAlertHandler):
     """
     Start HTTP server, will not return unless interrupted.
     """
