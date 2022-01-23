@@ -151,7 +151,7 @@ def handle_grafana_alert(payload):
         logger.error(f"No 'ruleName' in payload: {payload}")
         return False
 
-    if not RULE_NAME_MATCH in rule_name:
+    if RULE_NAME_MATCH not in rule_name:
         logger.error(
             f"'ruleName' value '{rule_name}' in the payload "
             "does not contain '{RULE_NAME_MATCH}': {payload}"
