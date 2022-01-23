@@ -1,8 +1,7 @@
-from alert import handle_grafana_alert, RULE_NAME_MATCH
-
-RULE_NAME_MATCH = 'bar'
+from alert import handle_grafana_alert
 
 
 def test_payload():
-    payload = {'ruleName': 'foo', 'state': 'alerting'}
-    assert not handle_grafana_alert(payload)
+    rule_name = 'foo'
+    payload = {'ruleName': rule_name, 'state': 'alerting'}
+    assert handle_grafana_alert(payload, rule_name + "bar", "foo.mp3")
