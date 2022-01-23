@@ -117,6 +117,15 @@ e.g. when the CO2 metric rises above given level (time to open a window).
       -e 's/^defaults.pcm.card 0/defaults.pcm.card 1/'
 ```
 - copy some MP3 files (with `.mp3` suffix) to `/srv/weather/`
+- test the alert in Grafana (it should start playing the MP3 file)
+  - run:
+  ```
+  cd /srv/weather
+  . ./env/bin/activate
+  ./alert.py -l debug --ruleNameMatch 'Test notification'
+  ```
+  - go to Alerts -> Notification channels and hit 'Test'
+  - the mp3 should be played
 - install the service
 ```
   sudo cp /srv/weather/alert.service /etc/systemd/system/
@@ -125,8 +134,6 @@ e.g. when the CO2 metric rises above given level (time to open a window).
   sudo systemctl start alert
   sudo systemctl status alert
 ```
-- test the alert in Grafana (it should start playing the MP3 file)
-  - go to Alerts -> Notification channels and hit 'Test'
 
 ## Links
 
