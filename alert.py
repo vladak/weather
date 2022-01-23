@@ -119,6 +119,9 @@ def play_mp3(timeout=30, mpg123="mpg123"):
 
 
 class GrafanaPayloadException(Exception):
+    """
+    Trivial class for passing exceptions from handle_grafana_alert().
+    """
     pass
 
 
