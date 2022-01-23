@@ -83,14 +83,7 @@ class GrafanaAlertHandler(BaseHTTPRequestHandler):
             self._set_response(400)
             return
 
-        try:
-            ret = handle_grafana_alert(payload)
-        except OSError as exc:
-            logger.error(f"Got exception while trying to play {FILE_TO_PLAY}: {exc}")
-            self._set_response(400)
-            return
-
-        if ret:
+        if handle_grafana_alert(payload):
             self._set_response(200)
         else:
             self._set_response(400)
