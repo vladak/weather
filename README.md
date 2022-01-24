@@ -138,7 +138,7 @@ e.g. when the CO2 metric rises above given level (time to open a window).
   ./alert.py -l debug --ruleNameMatch 'Test notification'
   ```
   - go to Alerts -> Notification channels and hit 'Test'
-  - the mp3 should be played
+  - a mp3 should be played
 - install the service
 ```
   sudo cp /srv/weather/alert.service /etc/systemd/system/
