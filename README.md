@@ -2,7 +2,7 @@
 
 # Weather
 
-Weather/environment monitoring station based on:
+Mostly indoors weather/environment monitoring station based on:
   - Raspberry Pi + Raspbian
   - sensors
   - Python
