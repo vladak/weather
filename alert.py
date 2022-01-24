@@ -22,8 +22,6 @@ from subprocess import TimeoutExpired
 
 from logutil import LogLevelAction
 
-play_queue = queue.Queue()
-
 
 class GrafanaAlertHandler(BaseHTTPRequestHandler):
     """
@@ -82,7 +80,10 @@ class GrafanaAlertHandler(BaseHTTPRequestHandler):
 
         try:
             handle_grafana_alert(
-                payload, self.server.rule_name_match, self.server.file_to_play
+                payload,
+                self.server.rule_name_match,
+                self.server.file_to_play,
+                self.server.play_queue,
             )
         except GrafanaPayloadException:
             self._set_response(400)
@@ -92,7 +93,7 @@ class GrafanaAlertHandler(BaseHTTPRequestHandler):
         self.wfile.write(f"POST request for {self.path}".encode("utf-8"))
 
 
-def play_mp3(timeout=30, mpg123="mpg123"):
+def play_mp3(play_queue, timeout=30, mpg123="mpg123"):
     """
     Worker to play files in the play_queue via mpg123.
     """
@@ -124,7 +125,7 @@ class GrafanaPayloadException(Exception):
     """
 
 
-def handle_grafana_alert(payload, rule_name_to_match, file_to_play):
+def handle_grafana_alert(payload, rule_name_to_match, file_to_play, play_queue):
     """
     Alert handling. Expects Grafana alert payload (JSON).
     :return True if the file was enqueued for playing, False otherwise.
@@ -168,26 +169,31 @@ class GrafanaAlertHttpServer(HTTPServer):
     Wrapper class to store parameters used by GrafanaAlertHandler.
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         server_address,
         rule_name_match,
         file_to_play,
+        play_queue,
         handler_class=GrafanaAlertHandler,
     ):
         super().__init__(server_address, handler_class)
         self.rule_name_match = rule_name_match
         self.file_to_play = file_to_play
+        self.play_queue = play_queue
 
 
-def run_server(port, rule_name_match, file_to_play):
+def run_server(port, rule_name_match, file_to_play, play_queue):
     """
     Start HTTP server, will not return unless interrupted.
     """
     logger = logging.getLogger(__name__)
 
     server_address = ("localhost", port)
-    httpd = GrafanaAlertHttpServer(server_address, rule_name_match, file_to_play)
+    httpd = GrafanaAlertHttpServer(
+        server_address, rule_name_match, file_to_play, play_queue
+    )
     logger.info(f"Starting HTTP server on port {port}...")
 
     try:
@@ -272,11 +278,13 @@ def main():
     file_to_play = os.path.join(dir_to_search, file_list[0])
     logger.info(f"Selected file to play: '{file_to_play}'")
 
+    play_queue = queue.Queue()
+
     threading.Thread(
-        target=play_mp3, args=(args.timeout, args.mpg123), daemon=True
+        target=play_mp3, args=(play_queue, args.timeout, args.mpg123), daemon=True
     ).start()
 
-    run_server(server_port, args.ruleNameMatch, file_to_play)
+    run_server(server_port, args.ruleNameMatch, file_to_play, play_queue)
 
 
 if __name__ == "__main__":
