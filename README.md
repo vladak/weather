@@ -2,7 +2,14 @@
 
 # Weather
 
-Simple weather monitoring Python script. Collects these metrics:
+Weather/environment monitoring station based on:
+  - Raspberry Pi + Raspbian
+  - sensors
+  - Python
+  - Prometheus
+  - Grafana
+
+These metrics are collected:
 
 | *Metric* | *Sensor* | *Sensor access* |
 | ------------- |:-------------:| :-------------: |
