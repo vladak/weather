@@ -6,8 +6,8 @@ Mostly indoors weather/environment monitoring station based on:
   - Raspberry Pi + Raspbian
   - sensors
   - Python
-  - Prometheus
-  - Grafana
+  - [Prometheus](https://prometheus.io/)
+  - [Grafana](https://grafana.com/)
 
 The goals are:
   - Grafana dashboard for the collected metrics
@@ -83,7 +83,7 @@ can be scraped by Prometheus.
 
 ## Prometheus
 
-- install prometheus
+- install Prometheus (standalone, i.e. not via Docker)
 ```
   TBD
   sudo systemctl enable prometheus
@@ -101,7 +101,7 @@ scrape_configs:
 
 ## Grafana
 
-- install Grafana (standalone)
+- install Grafana (standalone, i.e. not via Docker))
 - provision the dashboards from the `.json` files
 - setup Alert notification channels (set both as _Default_):
   - [PagerDuty](https://www.pagerduty.com/)
