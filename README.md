@@ -15,6 +15,8 @@ The goals are:
 
 Also, the metrics should be available for displaying on external display ala [eInk display with Rpi](https://github.com/vladak/zerodisplay).
 
+## Sensors
+
 These metrics are collected:
 
 | *Metric* | *Sensor* | *Sensor access* |
