@@ -155,3 +155,4 @@ e.g. when the CO2 metric rises above given level (time to open a window).
 - SCD-40 guide: https://learn.adafruit.com/adafruit-scd-40-and-scd-41/python-circuitpython
 - PMSA003I guide: https://github.com/adafruit/Adafruit_CircuitPython_PM25
 - USB card with Raspberry Pi: https://learn.adafruit.com/usb-audio-cards-with-a-raspberry-pi/updating-alsa-config
+- [BMP280](https://www.adafruit.com/product/2651) guide: https://learn.adafruit.com/adafruit-bmp280-barometric-pressure-plus-temperature-sensor-breakout/circuitpython-test
