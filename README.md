@@ -19,7 +19,7 @@ These metrics are collected:
 
 | *Metric* | *Sensor* | *Sensor access* |
 | ------------- |:-------------:| :-------------: |
-| [temperature](https://en.wikipedia.org/wiki/Temperature) | 1-wire | [OWFS](https://www.owfs.org/) |
+| [temperature](https://en.wikipedia.org/wiki/Temperature) | 1-wire via [DS9490R](https://www.maximintegrated.com/en/products/interface/universal-serial-bus/DS9490.html)| [OWFS](https://www.owfs.org/) |
 | [barometric pressure](https://en.wikipedia.org/wiki/Atmospheric_pressure) | [BMP280](https://www.adafruit.com/product/2651) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) |
 | [CO2](https://en.wikipedia.org/wiki/Carbon_dioxide) and [humidity](https://en.wikipedia.org/wiki/Humidity) | [SCD-40](https://www.adafruit.com/product/5187) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) |
 | [air particles](https://en.wikipedia.org/wiki/Particulates) | [PMSA003I](https://www.adafruit.com/product/4632) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) |
