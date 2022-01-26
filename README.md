@@ -19,12 +19,12 @@ Also, the metrics should be available for displaying on external display ala [eI
 
 These metrics are collected:
 
-| *Metric* | *Sensor* | *Sensor access* |
-| ------------- |:-------------:| :-------------: |
-| [temperature](https://en.wikipedia.org/wiki/Temperature) | [DS18B20](https://www.maximintegrated.com/en/products/sensors/DS18B20.html) via [DS9490R](https://www.maximintegrated.com/en/products/interface/universal-serial-bus/DS9490.html)| [1-Wire](https://en.wikipedia.org/wiki/1-Wire) ([OWFS](https://www.owfs.org/)) |
-| [barometric pressure](https://en.wikipedia.org/wiki/Atmospheric_pressure) | [BMP280](https://www.adafruit.com/product/2651) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) |
-| [CO2](https://en.wikipedia.org/wiki/Carbon_dioxide) and [humidity](https://en.wikipedia.org/wiki/Humidity) | [SCD-40](https://www.adafruit.com/product/5187) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) |
-| [air particles](https://en.wikipedia.org/wiki/Particulates) | [PMSA003I](https://www.adafruit.com/product/4632) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) |
+| *Metric* | *Sensor* | *Sensor connection* | *Metric access* |
+| ------------- |:-------------:| :-------------: | :-------------: |
+| [temperature](https://en.wikipedia.org/wiki/Temperature) | [DS18B20](https://www.maximintegrated.com/en/products/sensors/DS18B20.html) | [1-Wire](https://en.wikipedia.org/wiki/1-Wire) (via [DS9490R](https://www.maximintegrated.com/en/products/interface/universal-serial-bus/DS9490.html)) | [OWFS](https://www.owfs.org/) |
+| [barometric pressure](https://en.wikipedia.org/wiki/Atmospheric_pressure) | [BMP280](https://www.adafruit.com/product/2651) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) | Python libraries |
+| [CO2](https://en.wikipedia.org/wiki/Carbon_dioxide) and [humidity](https://en.wikipedia.org/wiki/Humidity) | [SCD-40](https://www.adafruit.com/product/5187) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) | Python libraries |
+| [air particles](https://en.wikipedia.org/wiki/Particulates) | [PMSA003I](https://www.adafruit.com/product/4632) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) | Python libraries |
 
 The I2C sensors are connected to the [Raspberry Pi](https://www.raspberrypi.org/) via the [SparkFun Qwiic / STEMMA QT HAT](https://www.adafruit.com/product/4688) that offers 4 [Stemma Qt](https://learn.adafruit.com/introducing-adafruit-stemma-qt/what-is-stemma-qt) ports.
 
