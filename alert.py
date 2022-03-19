@@ -248,7 +248,6 @@ def parse_args():
         "in the Grafana alert payload (exact match) to mp3 file."
         "These should be in the 'rule2mp3' section.",
         default="config.ini",
-        required=True,
     )
 
     return parser.parse_args()
