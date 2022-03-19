@@ -132,12 +132,26 @@ e.g. when the CO2 metric rises above given level (time to open a window).
       -e 's/^defaults.pcm.card 0/defaults.pcm.card 1/'
 ```
 - copy some MP3 files (with `.mp3` suffix) to `/srv/weather/`
+- create configuration in `config.ini` like so:
+```
+[rule2mp3]
+# The mapping from rule name to mp3 file to play.
+# All the files in this section have to readable.
+Rule foo = foo.mp3
+Rule bar = bar.mp3
+
+# This section is optional, the defaults are 8 and 23.
+# The mp3 file will not be played outside of this range.
+[start_end]
+start_hr = 10
+end_hr = 20
+```
 - test the alert in Grafana (it should start playing the MP3 file)
   - run:
   ```
   cd /srv/weather
   . ./env/bin/activate
-  ./alert.py -l debug --ruleNameMatch 'Test notification'
+  ./alert.py -l debug
   ```
   - go to Alerts -> Notification channels and hit 'Test'
   - a mp3 should be played
