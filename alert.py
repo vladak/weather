@@ -153,7 +153,9 @@ def handle_grafana_alert(payload, rule2file, play_queue):
         logger.error(f"No 'ruleName' in payload: {payload}")
         raise GrafanaPayloadException()
 
-    file_to_play = rule2file.get(rule_name)
+    # Python's configparser stores the keys in lower case so
+    # the ruleName needs to be matcher as lower case.
+    file_to_play = rule2file.get(rule_name.lower())
     if not file_to_play:
         logger.error(
             f"'ruleName' value '{rule_name}' in the payload "
