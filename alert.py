@@ -7,6 +7,7 @@ matches a condition.
 """
 
 import argparse
+import configparser
 import json
 import logging
 import os
@@ -81,8 +82,7 @@ class GrafanaAlertHandler(BaseHTTPRequestHandler):
         try:
             handle_grafana_alert(
                 payload,
-                self.server.rule_name_match,
-                self.server.file_to_play,
+                self.server.rule2file,
                 self.server.play_queue,
             )
         except GrafanaPayloadException:
@@ -125,7 +125,7 @@ class GrafanaPayloadException(Exception):
     """
 
 
-def handle_grafana_alert(payload, rule_name_to_match, file_to_play, play_queue):
+def handle_grafana_alert(payload, rule2file, play_queue):
     """
     Alert handling. Expects Grafana alert payload (JSON).
     :return True if the file was enqueued for playing, False otherwise.
@@ -153,10 +153,11 @@ def handle_grafana_alert(payload, rule_name_to_match, file_to_play, play_queue):
         logger.error(f"No 'ruleName' in payload: {payload}")
         raise GrafanaPayloadException()
 
-    if rule_name_to_match != rule_name:
+    file_to_play = rule2file.get(rule_name)
+    if not file_to_play:
         logger.error(
             f"'ruleName' value '{rule_name}' in the payload "
-            f"does not contain '{rule_name_to_match}': {payload}"
+            f"not found in the mappings: {rule2file}"
         )
         return False
 
@@ -173,27 +174,23 @@ class GrafanaAlertHttpServer(HTTPServer):
     def __init__(
         self,
         server_address,
-        rule_name_match,
-        file_to_play,
+        rule2file,
         play_queue,
         handler_class=GrafanaAlertHandler,
     ):
         super().__init__(server_address, handler_class)
-        self.rule_name_match = rule_name_match
-        self.file_to_play = file_to_play
+        self.rule2file = rule2file
         self.play_queue = play_queue
 
 
-def run_server(port, rule_name_match, file_to_play, play_queue):
+def run_server(port, rule2file, play_queue):
     """
     Start HTTP server, will not return unless interrupted.
     """
     logger = logging.getLogger(__name__)
 
     server_address = ("localhost", port)
-    httpd = GrafanaAlertHttpServer(
-        server_address, rule_name_match, file_to_play, play_queue
-    )
+    httpd = GrafanaAlertHttpServer(server_address, rule2file, play_queue)
     logger.info(f"Starting HTTP server on port {port}...")
 
     try:
@@ -240,12 +237,52 @@ def parse_args():
         default=30,
     )
     parser.add_argument(
-        "--ruleNameMatch",
-        help="Value to match the 'ruleName' key value in the payload (exact match)",
-        default="CO2 alert",
+        "--mp3config",
+        help="Configuration file with mapping from 'ruleName' key value "
+        "in the Grafana alert payload (exact match) to mp3 file."
+        "These should be in the 'rule2mp3' section.",
+        default="mp3config.ini",
+        required=True,
     )
 
     return parser.parse_args()
+
+
+def load_mp3_config(config_file):
+    """
+    Load .ini configuration file. Will exit the program on error.
+    :return: dictionary with rule name to mp3 file mappings
+    """
+
+    logger = logging.getLogger(__name__)
+
+    config = configparser.ConfigParser()
+    config.read(config_file)
+    mp3config_section_name = "rule2mp3"
+    if mp3config_section_name not in config.sections():
+        logger.error(
+            f"Config file {config_file} does not include "
+            "the {mp3config_section_name} section"
+        )
+        sys.exit(1)
+
+    # Check that all mp3 files in the configuration are readable.
+    mp3suffix = ".mp3"
+    for _, file in config[mp3config_section_name].items():
+        if not file.endswith(mp3suffix):
+            logger.error(f"File {file} does not end with {mp3suffix}")
+            sys.exit(1)
+
+        try:
+            with open(file, "r"):
+                pass
+        except IOError as exc:
+            logger.error(f"File '{file}' cannot be opened for reading: {exc}")
+            sys.exit(1)
+
+    logger.debug(f"File mappings: {config[mp3config_section_name]}")
+
+    return config[mp3config_section_name]
 
 
 def main():
@@ -263,20 +300,7 @@ def main():
         logger.error("Cannot find mpg123 executable")
         sys.exit(1)
 
-    # Search base directory of the program for files to play.
-    dir_to_search = os.path.dirname(os.path.realpath(__file__))
-    suffix = ".mp3"
-    file_list = [
-        f
-        for f in os.listdir(dir_to_search)
-        if os.path.isfile(os.path.join(dir_to_search, f)) and f.endswith(suffix)
-    ]
-    if len(file_list) == 0:
-        logger.error(f"Cannot find a file with {suffix} in {dir_to_search}")
-        sys.exit(1)
-
-    file_to_play = os.path.join(dir_to_search, file_list[0])
-    logger.info(f"Selected file to play: '{file_to_play}'")
+    rule2file = load_mp3_config(args.mp3config)
 
     play_queue = queue.Queue()
 
@@ -284,7 +308,7 @@ def main():
         target=play_mp3, args=(play_queue, args.timeout, args.mpg123), daemon=True
     ).start()
 
-    run_server(server_port, args.ruleNameMatch, file_to_play, play_queue)
+    run_server(server_port, rule2file, play_queue)
 
 
 if __name__ == "__main__":
