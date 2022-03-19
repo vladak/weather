@@ -265,7 +265,7 @@ def load_mp3_config(config, config_file):
     if mp3config_section_name not in config.sections():
         logger.error(
             f"Config file {config_file} does not include "
-            "the {mp3config_section_name} section"
+            f"the {mp3config_section_name} section"
         )
         sys.exit(1)
 
