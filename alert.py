@@ -53,7 +53,7 @@ class GrafanaAlertHandler(BaseHTTPRequestHandler):
             return
 
         now = datetime.now()
-        if now.hour < 8 or now.hour > 23:
+        if now.hour < self.server.start_hr or now.hour > self.server.end_hr:
             logger.info("Request received outside of open time window, ignoring")
             self._set_response(200)
             return
@@ -175,22 +175,28 @@ class GrafanaAlertHttpServer(HTTPServer):
         self,
         server_address,
         rule2file,
+        start_hr,
+        end_hr,
         play_queue,
         handler_class=GrafanaAlertHandler,
     ):
         super().__init__(server_address, handler_class)
         self.rule2file = rule2file
+        self.start_hr = start_hr
+        self.end_hr = end_hr
         self.play_queue = play_queue
 
 
-def run_server(port, rule2file, play_queue):
+def run_server(port, rule2file, start_hr, end_hr, play_queue):
     """
     Start HTTP server, will not return unless interrupted.
     """
     logger = logging.getLogger(__name__)
 
     server_address = ("localhost", port)
-    httpd = GrafanaAlertHttpServer(server_address, rule2file, play_queue)
+    httpd = GrafanaAlertHttpServer(
+        server_address, rule2file, start_hr, end_hr, play_queue
+    )
     logger.info(f"Starting HTTP server on port {port}...")
 
     try:
@@ -283,6 +289,33 @@ def load_mp3_config(config, config_file):
     return config[mp3config_section_name]
 
 
+def load_hr_config(config):
+    """
+    Load start and end hour from configuration file or return defaults.
+    :param config:
+    :return: tuple of start and end hour
+    """
+
+    logger = logging.getLogger(__name__)
+
+    start_hr = 8
+    end_hr = 23
+
+    section_name = "start_end"
+    if section_name in config.sections():
+        start_hr_config = config[section_name].get("start_hr")
+        if start_hr_config:
+            logger.debug(f"Using start hr from config: {start_hr_config}")
+            start_hr = start_hr_config
+
+        end_hr_config = config[section_name].get("end_hr")
+        if end_hr_config:
+            logger.debug(f"Using end hr from config: {end_hr_config}")
+            end_hr = end_hr_config
+
+    return start_hr, end_hr
+
+
 def main():
     """
     command line run
@@ -301,6 +334,8 @@ def main():
     config = configparser.ConfigParser()
     config.read(args.config)
     rule2file = load_mp3_config(config, args.config)
+    start_hr, end_hr = load_hr_config(config)
+    logger.debug(f"Using range: [{start_hr}, {end_hr}] hours")
 
     play_queue = queue.Queue()
 
@@ -308,7 +343,7 @@ def main():
         target=play_mp3, args=(play_queue, args.timeout, args.mpg123), daemon=True
     ).start()
 
-    run_server(server_port, rule2file, play_queue)
+    run_server(server_port, rule2file, start_hr, end_hr, play_queue)
 
 
 if __name__ == "__main__":
