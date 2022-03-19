@@ -278,7 +278,7 @@ def load_mp3_config(config, config_file):
             sys.exit(1)
 
         try:
-            with open(file, "r"):
+            with open(file, "r", encoding='utf-8'):
                 pass
         except IOError as exc:
             logger.error(f"File '{file}' cannot be opened for reading: {exc}")
