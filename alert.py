@@ -248,7 +248,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def load_mp3_config(config_file):
+def load_mp3_config(config, config_file):
     """
     Load .ini configuration file. Will exit the program on error.
     :return: dictionary with rule name to mp3 file mappings
@@ -256,8 +256,6 @@ def load_mp3_config(config_file):
 
     logger = logging.getLogger(__name__)
 
-    config = configparser.ConfigParser()
-    config.read(config_file)
     mp3config_section_name = "rule2mp3"
     if mp3config_section_name not in config.sections():
         logger.error(
@@ -300,7 +298,9 @@ def main():
         logger.error("Cannot find mpg123 executable")
         sys.exit(1)
 
-    rule2file = load_mp3_config(args.mp3config)
+    config = configparser.ConfigParser()
+    config.read(args.config)
+    rule2file = load_mp3_config(config, args.config)
 
     play_queue = queue.Queue()
 
