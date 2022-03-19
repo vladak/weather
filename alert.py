@@ -175,28 +175,26 @@ class GrafanaAlertHttpServer(HTTPServer):
         self,
         server_address,
         rule2file,
-        start_hr,
-        end_hr,
+        range_hr,
         play_queue,
         handler_class=GrafanaAlertHandler,
     ):
         super().__init__(server_address, handler_class)
         self.rule2file = rule2file
+        start_hr, end_hr = range_hr
         self.start_hr = start_hr
         self.end_hr = end_hr
         self.play_queue = play_queue
 
 
-def run_server(port, rule2file, start_hr, end_hr, play_queue):
+def run_server(port, rule2file, range_hr, play_queue):
     """
     Start HTTP server, will not return unless interrupted.
     """
     logger = logging.getLogger(__name__)
 
     server_address = ("localhost", port)
-    httpd = GrafanaAlertHttpServer(
-        server_address, rule2file, start_hr, end_hr, play_queue
-    )
+    httpd = GrafanaAlertHttpServer(server_address, rule2file, range_hr, play_queue)
     logger.info(f"Starting HTTP server on port {port}...")
 
     try:
@@ -345,7 +343,7 @@ def main():
         target=play_mp3, args=(play_queue, args.timeout, args.mpg123), daemon=True
     ).start()
 
-    run_server(server_port, rule2file, start_hr, end_hr, play_queue)
+    run_server(server_port, rule2file, (start_hr, end_hr), play_queue)
 
 
 if __name__ == "__main__":
