@@ -5,6 +5,7 @@ Description=Alert Service
 User=root
 Group=root
 Type=simple
+# setting working directory will not help much when running from su(1).
 WorkingDirectory=/srv/weather
 ExecStart=su -c "/usr/bin/env python3 /srv/weather/alert.py" - pi
 ExecStop=/bin/kill -2 $MAINPID

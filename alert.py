@@ -270,6 +270,7 @@ def load_mp3_config(config, config_file):
         sys.exit(1)
 
     # Check that all mp3 files in the configuration are readable.
+    # Of course, this is TOCTOU. play_mp3() will recheck.
     mp3suffix = ".mp3"
     for _, file in config[mp3config_section_name].items():
         if not file.endswith(mp3suffix):
