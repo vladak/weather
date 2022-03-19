@@ -40,11 +40,14 @@ def test_payload_lower_case():
 
 def test_payload_will_play():
     """
-    Simple test for song successfully enqueued.
+    Simple test for file successfully enqueued.
     """
     rule_name = "foo"
     payload = {"ruleName": rule_name, "state": "alerting"}
-    assert handle_grafana_alert(payload, {rule_name: "foo.mp3"}, queue.Queue())
+    play_queue = queue.Queue()
+    file_mp3 = "foo.mp3"
+    assert handle_grafana_alert(payload, {rule_name: file_mp3}, play_queue)
+    assert play_queue.get() == file_mp3
 
 
 def test_payload_with_exception():
