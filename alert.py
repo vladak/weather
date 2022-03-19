@@ -330,10 +330,15 @@ def main():
         logger.error("Cannot find mpg123 executable")
         sys.exit(1)
 
+    # To support relative paths.
+    os.chdir(os.path.dirname(__file__))
+
     config = configparser.ConfigParser()
-    config_files = config.read(args.config)
-    if args.config not in config_files:
-        logger.error(f"Failed to load configuration file '{args.config}'")
+    try:
+        with open(args.config, "r", encoding="utf-8") as config_fp:
+            config.read_file(config_fp)
+    except OSError as exc:
+        logger.error(f"Could not load '{args.config}': {exc}")
         sys.exit(1)
     rule2file = load_mp3_config(config, args.config)
     start_hr, end_hr = load_hr_config(config)
