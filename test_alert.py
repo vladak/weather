@@ -29,6 +29,15 @@ def test_payload_no_state_match():
     assert not handle_grafana_alert(payload, {rule_name: "foo.mp3"}, queue.Queue())
 
 
+def test_payload_lower_case():
+    """
+    Simple test for case insensitive ruleName matching.
+    """
+    rule_name = "foo"
+    payload = {"ruleName": rule_name.upper(), "state": "alerting"}
+    assert handle_grafana_alert(payload, {rule_name: "foo.mp3"}, queue.Queue())
+
+
 def test_payload_will_play():
     """
     Simple test for song successfully enqueued.
