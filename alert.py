@@ -331,7 +331,10 @@ def main():
         sys.exit(1)
 
     config = configparser.ConfigParser()
-    config.read(args.config)
+    config_files = config.read(args.config)
+    if args.config not in config_files:
+        logger.error(f"Failed to load configuration file '{args.config}'")
+        sys.exit(1)
     rule2file = load_mp3_config(config, args.config)
     start_hr, end_hr = load_hr_config(config)
     logger.debug(f"Using range: [{start_hr}, {end_hr}] hours")
