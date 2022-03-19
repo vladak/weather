@@ -281,7 +281,7 @@ def load_mp3_config(config, config_file):
             logger.error(f"File '{file}' cannot be opened for reading: {exc}")
             sys.exit(1)
 
-    logger.debug(f"File mappings: {config[mp3config_section_name]}")
+    logger.debug(f"File mappings: {dict(config[mp3config_section_name].items())}")
 
     return config[mp3config_section_name]
 
