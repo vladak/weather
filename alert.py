@@ -247,7 +247,7 @@ def parse_args():
         help="Configuration file with mapping from 'ruleName' key value "
         "in the Grafana alert payload (exact match) to mp3 file."
         "These should be in the 'rule2mp3' section.",
-        default="config.ini",
+        default="alert.ini",
     )
 
     return parser.parse_args()
