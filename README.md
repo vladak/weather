@@ -132,7 +132,7 @@ e.g. when the CO2 metric rises above given level (time to open a window).
       -e 's/^defaults.pcm.card 0/defaults.pcm.card 1/'
 ```
 - copy some MP3 files (with `.mp3` suffix) to `/srv/weather/`
-- create configuration in `config.ini` like so:
+- create configuration in `alert.ini` like so:
 ```
 [global]
 # allows to override the --loglevel command line option
