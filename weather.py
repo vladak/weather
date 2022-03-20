@@ -322,6 +322,8 @@ def main():
             "weather_temp_" + temp_sensor_name, "Temperature in " + temp_sensor_name
         )
 
+    logger.debug(f"Gauges: {gauges}")
+
     if not os.path.isdir(args.owfsdir):
         logger.error(f"Not a directory {args.owfsdir}")
         sys.exit(1)
