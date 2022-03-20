@@ -4,6 +4,7 @@ Acquire readings from various sensors and present them via HTTP in Prometheus fo
 """
 
 import argparse
+import configparser
 import logging
 import os
 import sys
@@ -16,7 +17,7 @@ import board
 from adafruit_pm25.i2c import PM25_I2C
 from prometheus_client import Gauge, start_http_server
 
-from logutil import LogLevelAction
+from logutil import LogLevelAction, get_log_level
 
 KUCHYNE = "kuchyne"
 TERASA = "terasa"
@@ -25,10 +26,6 @@ PRESSURE_SEA = "pressure_sea"
 HUMIDITY = "humidity"
 CO2 = "CO2"
 PM25 = "PM25"
-temp_sensors = {
-    "21F723030000": TERASA,
-    "D5F2CF020000": KUCHYNE,
-}
 
 
 def sea_level_pressure(pressure, outside_temp, height):
@@ -40,7 +37,7 @@ def sea_level_pressure(pressure, outside_temp, height):
     return pressure / pow(1.0 - 0.0065 * height / temp_comp, 5.255)
 
 
-def sensor_loop(sleep_timeout, owfsdir, height):
+def sensor_loop(sleep_timeout, owfsdir, height, temp_sensors, temp_outside_name):
     """
     main loop in which sensor values are collected and set into Prometheus
     client objects.
@@ -74,7 +71,9 @@ def sensor_loop(sleep_timeout, owfsdir, height):
 
         # Acquire temperature before pressure so that pressure at sea level
         # can be computed as soon as possible.
-        outside_temp = acquire_temperature(gauges, owfsdir)
+        outside_temp = acquire_temperature(
+            gauges, owfsdir, temp_sensors, temp_outside_name
+        )
 
         if bmp_sensor:
             acquire_pressure(
@@ -111,11 +110,13 @@ def acquire_pm25(gauge, pm25_sensor):
         gauge.labels(measurement=label_name).set(value)
 
 
-def acquire_temperature(gauges, owfsdir):
+def acquire_temperature(gauges, owfsdir, temp_sensors, temp_outside_name):
     """
     Read temperature using OWFS.
     :param gauges:
-    :param owfsdir:
+    :param owfsdir: OWFS directory
+    :param temp_sensors: dictionary of ID to name
+    :param temp_outside_name: name of the outside temperature sensor
     :return: outside temperature
     """
 
@@ -136,7 +137,7 @@ def acquire_temperature(gauges, owfsdir):
             logger.debug(f"{sensor_name} temp={temp}")
             gauges[sensor_name].set(temp)
 
-            if sensor_name == TERASA:
+            if sensor_name == temp_outside_name:
                 outside_temp = temp
 
     return outside_temp
@@ -189,9 +190,10 @@ def acquire_scd4x(gauge_co2, gauge_humidity, scd4x_sensor):
         gauge_humidity.set(humidity)
 
 
-def main():
+def parse_args():
     """
-    command line run
+    Command line options parsing
+    :return:
     """
     parser = argparse.ArgumentParser(
         description="weather sensor collector",
@@ -218,12 +220,91 @@ def main():
         help='Set log level (e.g. "ERROR")',
         default=logging.INFO,
     )
-    args = parser.parse_args()
+    parser.add_argument(
+        "--config",
+        help="Configuration file",
+        default="weather.ini",
+    )
+
+    return parser.parse_args()
+
+
+def config_load_temp_sensors(config, config_file):
+    """
+    Load temperature sensor information. Will exit the program on failure.
+    :param config: configparser instance
+    :return: (dictionary of 1-wire ID to name, name of outside temperature sensor)
+    """
+
+    logger = logging.getLogger(__name__)
+
+    temp_sensors_section_name = "temp_sensors"
+    if temp_sensors_section_name not in config.sections():
+        logger.error(
+            f"Config file {config_file} does not include "
+            f"the {temp_sensors_section_name} section"
+        )
+        sys.exit(1)
+
+    temp_sensors = config[temp_sensors_section_name].items()
+    logger.debug(f"Temperature sensor mappings: {dict(temp_sensors)}")
+
+    global_section_name = "global"
+    if global_section_name not in config.sections():
+        logger.error(
+            f"Config file {config_file} does not include "
+            f"the {global_section_name} section"
+        )
+        sys.exit(1)
+
+    outside_temp_name = "outside_temp_name"
+    outside_temp = config[global_section_name].get(outside_temp_name)
+    if not outside_temp:
+        logger.error(f"Section {global_section_name} does not contain")
+        sys.exit(1)
+
+    logger.debug(f"outside temperature sensor: {outside_temp}")
+
+    if outside_temp not in temp_sensors.values():
+        logger.error(
+            f"name of outside temperature sensor ({outside_temp_name}) "
+            f"not present in temperature sensors: {temp_sensors}"
+        )
+        sys.exit(1)
+
+    return temp_sensors, outside_temp
+
+
+def main():
+    """
+    command line run
+    """
+    args = parse_args()
 
     logging.basicConfig()
     logger = logging.getLogger(__name__)
     logger.setLevel(args.loglevel)
     logger.info("Running")
+
+    # To support relative paths.
+    os.chdir(os.path.dirname(__file__))
+
+    config = configparser.ConfigParser()
+    try:
+        with open(args.config, "r", encoding="utf-8") as config_fp:
+            config.read_file(config_fp)
+    except OSError as exc:
+        logger.error(f"Could not load '{args.config}': {exc}")
+        sys.exit(1)
+
+    # Log level from configuration overrides command line option.
+    config_log_level_str = config["global"].get("loglevel")
+    if config_log_level_str:
+        config_log_level = get_log_level(config_log_level_str)
+        if config_log_level:
+            logger.setLevel(config_log_level)
+
+    temp_sensors, temp_outside_name = config_load_temp_sensors(config, args.config)
 
     if not os.path.isdir(args.owfsdir):
         logger.error(f"Not a directory {args.owfsdir}")
@@ -232,7 +313,9 @@ def main():
     logger.info(f"Starting HTTP server on port {args.port}")
     start_http_server(args.port)
     thread = threading.Thread(
-        target=sensor_loop, daemon=True, args=[args.sleep, args.owfsdir, args.height]
+        target=sensor_loop,
+        daemon=True,
+        args=[args.sleep, args.owfsdir, args.height, temp_sensors, temp_outside_name],
     )
     thread.start()
     thread.join()
