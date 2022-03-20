@@ -28,9 +28,7 @@ PM25 = "PM25"
 temp_sensors = {
     "21F723030000": TERASA,
     "D5F2CF020000": KUCHYNE,
-    "E2C0CF020000": "pocitace",
 }
-sensor_names_to_record = [KUCHYNE, TERASA]
 
 
 def sea_level_pressure(pressure, outside_temp, height):
@@ -134,7 +132,7 @@ def acquire_temperature(gauges, owfsdir):
                 logger.error(f"error while reading {file_path}: {exception}")
                 continue
 
-        if temp and sensor_name in sensor_names_to_record:
+        if temp:
             logger.debug(f"{sensor_name} temp={temp}")
             gauges[sensor_name].set(temp)
 
