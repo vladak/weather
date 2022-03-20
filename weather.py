@@ -317,7 +317,7 @@ def main():
         PM25: Gauge("pm25", "Particles in air", ["measurement"]),
     }
 
-    for temp_sensor_name in temp_sensors.keys():
+    for temp_sensor_name in temp_sensors.values():
         gauges[temp_sensor_name] = Gauge(
             "weather_temp_" + temp_sensor_name, "Temperature in " + temp_sensor_name
         )
