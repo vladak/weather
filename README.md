@@ -72,6 +72,18 @@ can be scraped by Prometheus.
   . ./env/bin/activate
   pip install -r requirements.txt
 ```
+- create `/srv/weather/weather.ini` configuration file:
+```
+[temp_sensors]
+"21F723030000" = "terasa"
+"D5F2CF020000" = "kuchyne"
+
+[global]
+# Name of the sensor from the 'temp_sensors' section that measures outside temperature.
+outside_temp_name = "terasa"
+# Overrids the --loglevel command line option
+# loglevel = debug
+```
 - add the `weather` service
 ```
   sudo cp weather.service /etc/systemd/system/
