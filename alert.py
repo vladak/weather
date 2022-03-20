@@ -21,7 +21,7 @@ from pprint import pformat
 from shutil import which
 from subprocess import TimeoutExpired
 
-from logutil import LogLevelAction
+from logutil import LogLevelAction, get_log_level
 
 
 class GrafanaAlertHandler(BaseHTTPRequestHandler):
@@ -273,6 +273,8 @@ def load_mp3_config(config, config_file):
     # Of course, this is TOCTOU. play_mp3() will recheck.
     mp3suffix = ".mp3"
     for _, file in config[mp3config_section_name].items():
+        logger.debug(f"Checking file '{file}'")
+
         if not file.endswith(mp3suffix):
             logger.error(f"File {file} does not end with {mp3suffix}")
             sys.exit(1)
@@ -341,6 +343,14 @@ def main():
     except OSError as exc:
         logger.error(f"Could not load '{args.config}': {exc}")
         sys.exit(1)
+
+    # Log level from configuration overrides command line option.
+    config_log_level_str = config["global"].get("loglevel")
+    if config_log_level_str:
+        config_log_level = get_log_level(config_log_level_str)
+        if config_log_level:
+            logger.setLevel(config_log_level)
+
     rule2file = load_mp3_config(config, args.config)
     start_hr, end_hr = load_hr_config(config)
     logger.debug(f"Using range: [{start_hr}, {end_hr}] hours")
