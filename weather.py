@@ -72,25 +72,28 @@ def sensor_loop(sleep_timeout, owfsdir, height):
 
     while True:
         if scd4x_sensor:
-            acquire_scd4x(gauges, scd4x_sensor)
+            acquire_scd4x(gauges[CO2], gauges[HUMIDITY], scd4x_sensor)
 
         # Acquire temperature before pressure so that pressure at sea level
         # can be computed as soon as possible.
         outside_temp = acquire_temperature(gauges, owfsdir)
 
         if bmp_sensor:
-            acquire_pressure(bmp_sensor, gauges, height, outside_temp)
+            acquire_pressure(
+                bmp_sensor, gauges[PRESSURE], gauges[PRESSURE_SEA], height, outside_temp
+            )
 
         if pm25_sensor:
-            acquire_pm25(gauges, pm25_sensor)
+            acquire_pm25(gauges[PM25], pm25_sensor)
 
         time.sleep(sleep_timeout)
 
 
-def acquire_pm25(gauges, pm25_sensor):
+def acquire_pm25(gauge, pm25_sensor):
     """
     Read PM25 data
-    :param pm25_sensor:
+    :param gauge Gauge object
+    :param pm25_sensor: PM25 sensor object
     :return:
     """
 
@@ -107,7 +110,7 @@ def acquire_pm25(gauges, pm25_sensor):
     for name, value in acquired_data.items():
         label_name = name.replace(" ", "_")
         logger.debug(f"setting PM25 gauge with label={label_name} to {value}")
-        gauges[PM25].labels(measurement=label_name).set(value)
+        gauge.labels(measurement=label_name).set(value)
 
 
 def acquire_temperature(gauges, owfsdir):
@@ -141,11 +144,14 @@ def acquire_temperature(gauges, owfsdir):
     return outside_temp
 
 
-def acquire_pressure(bmp_sensor, gauges, height, outside_temp):
+def acquire_pressure(
+    bmp_sensor, gauge_pressure, gauge_pressure_sea, height, outside_temp
+):
     """
     Read data from the pressure sensor and calculate pressure at sea level.
     :param bmp_sensor:
-    :param gauges:
+    :param gauge_pressure: Gauge object
+    :param gauge_pressure_sea: Gauge object
     :param height:
     :param outside_temp:
     :return:
@@ -156,17 +162,18 @@ def acquire_pressure(bmp_sensor, gauges, height, outside_temp):
     pressure_val = bmp_sensor.pressure
     if pressure_val and pressure_val > 0:
         logger.debug(f"pressure={pressure_val}")
-        gauges[PRESSURE].set(pressure_val)
+        gauge_pressure.set(pressure_val)
         if outside_temp:
             pressure_val = sea_level_pressure(pressure_val, outside_temp, height)
             logger.debug(f"pressure at sea level={pressure_val}")
-            gauges[PRESSURE_SEA].set(pressure_val)
+            gauge_pressure_sea.set(pressure_val)
 
 
-def acquire_scd4x(gauges, scd4x_sensor):
+def acquire_scd4x(gauge_co2, gauge_humidity, scd4x_sensor):
     """
     Reads CO2 and humidity from the SCD4x sensor.
-    :param gauges:
+    :param gauge_co2: Gauge object
+    :param gauge_humidity: Gauge object
     :param scd4x_sensor:
     :return:
     """
@@ -176,12 +183,12 @@ def acquire_scd4x(gauges, scd4x_sensor):
     co2_ppm = scd4x_sensor.CO2
     if co2_ppm:
         logger.debug(f"CO2 ppm={co2_ppm}")
-        gauges[CO2].set(co2_ppm)
+        gauge_co2.set(co2_ppm)
 
     humidity = scd4x_sensor.relative_humidity
     if humidity:
         logger.debug(f"humidity={humidity:.1f}%")
-        gauges[HUMIDITY].set(humidity)
+        gauge_humidity.set(humidity)
 
 
 def main():
