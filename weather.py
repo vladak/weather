@@ -97,14 +97,14 @@ def acquire_pm25(gauges, pm25_sensor):
     logger = logging.getLogger(__name__)
 
     try:
-        aqdata = pm25_sensor.read()
+        acquired_data = pm25_sensor.read()
     except RuntimeError:
         logger.warning("Unable to read from PM25 sensor")
         return
 
-    logger.debug(f"PM25 data={aqdata}")
+    logger.debug(f"PM25 data={acquired_data}")
 
-    for name, value in aqdata.items():
+    for name, value in acquired_data.items():
         label_name = name.replace(" ", "_")
         logger.debug(f"setting PM25 gauge with label={label_name} to {value}")
         gauges[PM25].labels(measurement=label_name).set(value)
