@@ -19,8 +19,6 @@ from prometheus_client import Gauge, start_http_server
 
 from logutil import LogLevelAction, get_log_level
 
-KUCHYNE = "kuchyne"
-TERASA = "terasa"
 PRESSURE = "pressure"
 PRESSURE_SEA = "pressure_sea"
 HUMIDITY = "humidity"
@@ -37,24 +35,15 @@ def sea_level_pressure(pressure, outside_temp, height):
     return pressure / pow(1.0 - 0.0065 * height / temp_comp, 5.255)
 
 
-def sensor_loop(sleep_timeout, owfsdir, altitude, temp_sensors, temp_outside_name):
+# pylint: disable=too-many-arguments
+def sensor_loop(
+    sleep_timeout, owfsdir, altitude, temp_sensors, temp_outside_name, gauges
+):
     """
     main loop in which sensor values are collected and set into Prometheus
     client objects.
     """
     logger = logging.getLogger(__name__)
-
-    gauges = {
-        KUCHYNE: Gauge("weather_temp_" + KUCHYNE, "Temperature in " + KUCHYNE),
-        TERASA: Gauge("weather_temp_" + TERASA, "Temperature in " + TERASA),
-        PRESSURE: Gauge("pressure_hpa", "Barometric pressure in hPa"),
-        PRESSURE_SEA: Gauge(
-            "pressure_sea_level_hpa", "Barometric sea level pressure in hPa"
-        ),
-        HUMIDITY: Gauge("humidity_pct", "Humidity inside in percent"),
-        CO2: Gauge("co2_ppm", "CO2 in ppm"),
-        PM25: Gauge("pm25", "Particles in air", ["measurement"]),
-    }
 
     i2c = board.I2C()
     bmp_sensor = adafruit_bmp280.Adafruit_BMP280_I2C(i2c)
@@ -318,6 +307,21 @@ def main():
 
     temp_sensors, temp_outside_name, altitude = config_load(config, args.config)
 
+    gauges = {
+        PRESSURE: Gauge("pressure_hpa", "Barometric pressure in hPa"),
+        PRESSURE_SEA: Gauge(
+            "pressure_sea_level_hpa", "Barometric sea level pressure in hPa"
+        ),
+        HUMIDITY: Gauge("humidity_pct", "Humidity inside in percent"),
+        CO2: Gauge("co2_ppm", "CO2 in ppm"),
+        PM25: Gauge("pm25", "Particles in air", ["measurement"]),
+    }
+
+    for temp_sensor_name in temp_sensors.keys():
+        gauges[temp_sensor_name] = Gauge(
+            "weather_temp_" + temp_sensor_name, "Temperature in " + temp_sensor_name
+        )
+
     if not os.path.isdir(args.owfsdir):
         logger.error(f"Not a directory {args.owfsdir}")
         sys.exit(1)
@@ -327,7 +331,14 @@ def main():
     thread = threading.Thread(
         target=sensor_loop,
         daemon=True,
-        args=[args.sleep, args.owfsdir, altitude, temp_sensors, temp_outside_name],
+        args=[
+            args.sleep,
+            args.owfsdir,
+            altitude,
+            temp_sensors,
+            temp_outside_name,
+            gauges,
+        ],
     )
     thread.start()
     thread.join()
