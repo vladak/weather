@@ -81,7 +81,8 @@ def sensor_loop(sleep_timeout, owfsdir, height):
         if bmp_sensor:
             acquire_pressure(bmp_sensor, gauges, height, outside_temp)
 
-        acquire_pm25(gauges, pm25_sensor)
+        if pm25_sensor:
+            acquire_pm25(gauges, pm25_sensor)
 
         time.sleep(sleep_timeout)
 
