@@ -37,7 +37,7 @@ def sea_level_pressure(pressure, outside_temp, height):
     return pressure / pow(1.0 - 0.0065 * height / temp_comp, 5.255)
 
 
-def sensor_loop(sleep_timeout, owfsdir, height, temp_sensors, temp_outside_name):
+def sensor_loop(sleep_timeout, owfsdir, altitude, temp_sensors, temp_outside_name):
     """
     main loop in which sensor values are collected and set into Prometheus
     client objects.
@@ -62,7 +62,7 @@ def sensor_loop(sleep_timeout, owfsdir, height, temp_sensors, temp_outside_name)
     pm25_sensor = PM25_I2C(i2c, None)
 
     if scd4x_sensor:
-        logger.info("Waiting for the first measurement from the SCD-40")
+        logger.info("Waiting for the first measurement from the SCD-40 sensor")
         scd4x_sensor.start_periodic_measurement()
 
     while True:
@@ -77,7 +77,11 @@ def sensor_loop(sleep_timeout, owfsdir, height, temp_sensors, temp_outside_name)
 
         if bmp_sensor:
             acquire_pressure(
-                bmp_sensor, gauges[PRESSURE], gauges[PRESSURE_SEA], height, outside_temp
+                bmp_sensor,
+                gauges[PRESSURE],
+                gauges[PRESSURE_SEA],
+                altitude,
+                outside_temp,
             )
 
         if pm25_sensor:
@@ -211,9 +215,6 @@ def parse_args():
         "-s", "--sleep", default=5, type=int, help="sleep duration in seconds"
     )
     parser.add_argument(
-        "-H", "--height", default=245, type=int, help="height for pressure computation"
-    )
-    parser.add_argument(
         "-l",
         "--loglevel",
         action=LogLevelAction,
@@ -229,11 +230,12 @@ def parse_args():
     return parser.parse_args()
 
 
-def config_load_temp_sensors(config, config_file):
+def config_load(config, config_file):
     """
     Load temperature sensor information. Will exit the program on failure.
     :param config: configparser instance
-    :return: (dictionary of 1-wire ID to name, name of outside temperature sensor)
+    :param config_file: configuration file (for logging)
+    :return: (dictionary of 1-wire ID to name, name of outside temperature sensor, altitude)
     """
 
     logger = logging.getLogger(__name__)
@@ -260,7 +262,9 @@ def config_load_temp_sensors(config, config_file):
     outside_temp_name = "outside_temp_name"
     outside_temp = config[global_section_name].get(outside_temp_name)
     if not outside_temp:
-        logger.error(f"Section {global_section_name} does not contain")
+        logger.error(
+            f"Section {global_section_name} does not contain {outside_temp_name}"
+        )
         sys.exit(1)
 
     logger.debug(f"outside temperature sensor: {outside_temp}")
@@ -272,7 +276,15 @@ def config_load_temp_sensors(config, config_file):
         )
         sys.exit(1)
 
-    return temp_sensors, outside_temp
+    altitude_name = "altitude"
+    altitude = config[global_section_name].get(altitude_name)
+    if not altitude:
+        logger.error(f"Section {global_section_name} does not contain {altitude_name}")
+        sys.exit(1)
+
+    logger.debug(f"Altitude = {altitude}")
+
+    return temp_sensors, outside_temp, altitude
 
 
 def main():
@@ -304,7 +316,7 @@ def main():
         if config_log_level:
             logger.setLevel(config_log_level)
 
-    temp_sensors, temp_outside_name = config_load_temp_sensors(config, args.config)
+    temp_sensors, temp_outside_name, altitude = config_load(config, args.config)
 
     if not os.path.isdir(args.owfsdir):
         logger.error(f"Not a directory {args.owfsdir}")
@@ -315,7 +327,7 @@ def main():
     thread = threading.Thread(
         target=sensor_loop,
         daemon=True,
-        args=[args.sleep, args.owfsdir, args.height, temp_sensors, temp_outside_name],
+        args=[args.sleep, args.owfsdir, altitude, temp_sensors, temp_outside_name],
     )
     thread.start()
     thread.join()
