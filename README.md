@@ -134,6 +134,10 @@ e.g. when the CO2 metric rises above given level (time to open a window).
 - copy some MP3 files (with `.mp3` suffix) to `/srv/weather/`
 - create configuration in `config.ini` like so:
 ```
+[global]
+# allows to override the --loglevel command line option
+loglevel = debug
+
 [rule2mp3]
 # The mapping from rule name to mp3 file to play.
 # All the files in this section have to readable.
