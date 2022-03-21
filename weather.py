@@ -116,7 +116,7 @@ def acquire_temperature(gauges, owfsdir, temp_sensors, temp_outside_name):
     logger = logging.getLogger(__name__)
 
     outside_temp = None
-    logger.debug(f"temperature sensors: {temp_sensors}")
+    logger.debug(f"temperature sensors: {temp_sensors.items()}")
     for sensor_id, sensor_name in temp_sensors.items():
         file_path = os.path.join(owfsdir, "28." + sensor_id, "temperature")
         with open(file_path, "r", encoding="ascii") as file_obj:
