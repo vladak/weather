@@ -270,7 +270,9 @@ def config_load(config, config_file):
     altitude_name = "altitude"
     altitude = config[global_section_name].get(altitude_name)
     if not altitude:
-        raise ConfigException(f"Section {global_section_name} does not contain {altitude_name}")
+        raise ConfigException(
+            f"Section {global_section_name} does not contain {altitude_name}"
+        )
 
     logger.debug(f"Altitude = {altitude}")
 

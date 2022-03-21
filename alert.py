@@ -287,7 +287,9 @@ def load_mp3_config(config, config_file):
             with open(file, "r", encoding="utf-8"):
                 pass
         except IOError as exc:
-            raise ConfigException(f"File '{file}' cannot be opened for reading") from exc
+            raise ConfigException(
+                f"File '{file}' cannot be opened for reading"
+            ) from exc
 
     logger.debug(f"File mappings: {dict(config[mp3config_section_name].items())}")
 
