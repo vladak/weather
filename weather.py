@@ -242,8 +242,8 @@ def config_load(config, config_file):
             f"the {temp_sensors_section_name} section"
         )
 
-    temp_sensors = config[temp_sensors_section_name].items()
-    logger.debug(f"Temperature sensor mappings: {dict(temp_sensors)}")
+    temp_sensors = config[temp_sensors_section_name]
+    logger.debug(f"Temperature sensor mappings: {dict(temp_sensors.items())}")
 
     global_section_name = "global"
     if global_section_name not in config.sections():
