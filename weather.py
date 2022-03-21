@@ -219,6 +219,12 @@ def parse_args():
     return parser.parse_args()
 
 
+class ConfigException(Exception):
+    """
+    For passing information about configparser related errors.
+    """
+
+
 def config_load(config, config_file):
     """
     Load temperature sensor information. Will exit the program on failure.
@@ -231,45 +237,40 @@ def config_load(config, config_file):
 
     temp_sensors_section_name = "temp_sensors"
     if temp_sensors_section_name not in config.sections():
-        logger.error(
+        raise ConfigException(
             f"Config file {config_file} does not include "
             f"the {temp_sensors_section_name} section"
         )
-        sys.exit(1)
 
     temp_sensors = config[temp_sensors_section_name].items()
     logger.debug(f"Temperature sensor mappings: {dict(temp_sensors)}")
 
     global_section_name = "global"
     if global_section_name not in config.sections():
-        logger.error(
+        raise ConfigException(
             f"Config file {config_file} does not include "
             f"the {global_section_name} section"
         )
-        sys.exit(1)
 
     outside_temp_name = "outside_temp_name"
     outside_temp = config[global_section_name].get(outside_temp_name)
     if not outside_temp:
-        logger.error(
+        raise ConfigException(
             f"Section {global_section_name} does not contain {outside_temp_name}"
         )
-        sys.exit(1)
 
     logger.debug(f"outside temperature sensor: {outside_temp}")
 
     if outside_temp not in temp_sensors.values():
-        logger.error(
+        raise ConfigException(
             f"name of outside temperature sensor ({outside_temp_name}) "
             f"not present in temperature sensors: {temp_sensors}"
         )
-        sys.exit(1)
 
     altitude_name = "altitude"
     altitude = config[global_section_name].get(altitude_name)
     if not altitude:
-        logger.error(f"Section {global_section_name} does not contain {altitude_name}")
-        sys.exit(1)
+        raise ConfigException(f"Section {global_section_name} does not contain {altitude_name}")
 
     logger.debug(f"Altitude = {altitude}")
 
@@ -305,7 +306,11 @@ def main():
         if config_log_level:
             logger.setLevel(config_log_level)
 
-    temp_sensors, temp_outside_name, altitude = config_load(config, args.config)
+    try:
+        temp_sensors, temp_outside_name, altitude = config_load(config, args.config)
+    except ConfigException as exc:
+        logger.error(f"Failed to process config file: {exc}")
+        sys.exit(1)
 
     gauges = {
         PRESSURE: Gauge("pressure_hpa", "Barometric pressure in hPa"),

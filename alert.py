@@ -253,6 +253,12 @@ def parse_args():
     return parser.parse_args()
 
 
+class ConfigException(Exception):
+    """
+    For passing information about configparser related errors.
+    """
+
+
 def load_mp3_config(config, config_file):
     """
     Load .ini configuration file. Will exit the program on error.
@@ -263,11 +269,10 @@ def load_mp3_config(config, config_file):
 
     mp3config_section_name = "rule2mp3"
     if mp3config_section_name not in config.sections():
-        logger.error(
+        raise ConfigException(
             f"Config file {config_file} does not include "
             f"the {mp3config_section_name} section"
         )
-        sys.exit(1)
 
     # Check that all mp3 files in the configuration are readable.
     # Of course, this is TOCTOU. play_mp3() will recheck.
@@ -276,15 +281,13 @@ def load_mp3_config(config, config_file):
         logger.debug(f"Checking file '{file}'")
 
         if not file.endswith(mp3suffix):
-            logger.error(f"File {file} does not end with {mp3suffix}")
-            sys.exit(1)
+            raise ConfigException(f"File {file} does not end with {mp3suffix}")
 
         try:
             with open(file, "r", encoding="utf-8"):
                 pass
         except IOError as exc:
-            logger.error(f"File '{file}' cannot be opened for reading: {exc}")
-            sys.exit(1)
+            raise ConfigException(f"File '{file}' cannot be opened for reading") from exc
 
     logger.debug(f"File mappings: {dict(config[mp3config_section_name].items())}")
 
@@ -351,7 +354,12 @@ def main():
         if config_log_level:
             logger.setLevel(config_log_level)
 
-    rule2file = load_mp3_config(config, args.config)
+    try:
+        rule2file = load_mp3_config(config, args.config)
+    except ConfigException as exc:
+        logger.error(f"Failed to process config file: {exc}")
+        sys.exit(1)
+
     start_hr, end_hr = load_hr_config(config)
     logger.debug(f"Using range: [{start_hr}, {end_hr}] hours")
 
