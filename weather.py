@@ -268,11 +268,17 @@ def config_load(config, config_file):
         )
 
     altitude_name = "altitude"
-    try:
-        altitude = int(config[global_section_name].get(altitude_name))
-    except ValueError as exc:
+    altitude_value = config[global_section_name].get(altitude_name)
+    if not altitude_value:
         raise ConfigException(
             f"Section {global_section_name} does not contain {altitude_name}"
+        )
+
+    try:
+        altitude = int(altitude_value)
+    except ValueError as exc:
+        raise ConfigException(
+            f"Altitude value is not an integer: {altitude_value}"
         ) from exc
 
     logger.debug(f"Altitude = {altitude}")
