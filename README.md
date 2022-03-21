@@ -75,12 +75,12 @@ can be scraped by Prometheus.
 - create `/srv/weather/weather.ini` configuration file:
 ```
 [temp_sensors]
-"21F723030000" = "terasa"
-"D5F2CF020000" = "kuchyne"
+21F723030000 = terasa
+D5F2CF020000 = kuchyne
 
 [global]
 # Name of the sensor from the 'temp_sensors' section that measures outside temperature.
-outside_temp_name = "terasa"
+outside_temp_name = terasa
 # altitude (in meters) for computing atmospheric pressure at sea level
 altitude = 245
 # Overrids the --loglevel command line option
