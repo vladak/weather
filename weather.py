@@ -225,6 +225,31 @@ class ConfigException(Exception):
     """
 
 
+def conf_get_altitude(config, global_section_name):
+    """
+    :param config: configparser instance
+    :return: altitude value (int)
+    """
+    logger = logging.getLogger(__name__)
+
+    altitude_name = "altitude"
+    altitude_value = config[global_section_name].get(altitude_name)
+    if not altitude_value:
+        raise ConfigException(
+            f"Section {global_section_name} does not contain {altitude_name}"
+        )
+
+    try:
+        altitude = int(altitude_value)
+    except ValueError as exc:
+        raise ConfigException(
+            f"Altitude value is not an integer: {altitude_value}"
+        ) from exc
+
+    logger.debug(f"Altitude = {altitude}")
+    return altitude
+
+
 def config_load(config, config_file):
     """
     Load temperature sensor information. Will exit the program on failure.
@@ -267,21 +292,7 @@ def config_load(config, config_file):
             f"not present in temperature sensors: {temp_sensors}"
         )
 
-    altitude_name = "altitude"
-    altitude_value = config[global_section_name].get(altitude_name)
-    if not altitude_value:
-        raise ConfigException(
-            f"Section {global_section_name} does not contain {altitude_name}"
-        )
-
-    try:
-        altitude = int(altitude_value)
-    except ValueError as exc:
-        raise ConfigException(
-            f"Altitude value is not an integer: {altitude_value}"
-        ) from exc
-
-    logger.debug(f"Altitude = {altitude}")
+    altitude = conf_get_altitude(config, global_section_name)
 
     return temp_sensors, outside_temp, altitude
 
