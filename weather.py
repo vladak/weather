@@ -13,6 +13,7 @@ import time
 
 import adafruit_bmp280
 import adafruit_scd4x
+import adafruit_veml7700
 import board
 from adafruit_pm25.i2c import PM25_I2C
 from prometheus_client import Gauge, start_http_server
@@ -22,6 +23,7 @@ from logutil import LogLevelAction, get_log_level
 PRESSURE = "pressure"
 PRESSURE_SEA = "pressure_sea"
 HUMIDITY = "humidity"
+LUX = "Lux"
 CO2 = "CO2"
 PM25 = "PM25"
 
@@ -49,6 +51,11 @@ def sensor_loop(
     bmp_sensor = adafruit_bmp280.Adafruit_BMP280_I2C(i2c)
     scd4x_sensor = adafruit_scd4x.SCD4X(i2c)
     pm25_sensor = PM25_I2C(i2c, None)
+    try:
+        veml7700_sensor = adafruit_veml7700.VEML7700(i2c)
+    except RuntimeError as exc:
+        logger.error(f"cannot instantiate Lux sensor: {exc}")
+        veml7700_sensor = None
 
     if scd4x_sensor:
         logger.info("Waiting for the first measurement from the SCD-40 sensor")
@@ -57,6 +64,9 @@ def sensor_loop(
     while True:
         if scd4x_sensor:
             acquire_scd4x(gauges[CO2], gauges[HUMIDITY], scd4x_sensor)
+
+        if veml7700_sensor:
+            acquire_light(gauges[LUX], veml7700_sensor)
 
         # Acquire temperature before pressure so that pressure at sea level
         # can be computed as soon as possible.
@@ -181,6 +191,22 @@ def acquire_scd4x(gauge_co2, gauge_humidity, scd4x_sensor):
     if humidity:
         logger.debug(f"humidity={humidity:.1f}%")
         gauge_humidity.set(humidity)
+
+
+def acquire_light(gauge_lux, light_sensor):
+    """
+    Reads light amount in the form of Lux
+    :param gauge_lux Gauge object
+    :param light_sensor light sensor object
+    :return:
+    """
+
+    logger = logging.getLogger(__name__)
+
+    lux = light_sensor.light
+    if lux:
+        logger.debug(f"lux={lux}")
+        gauge_lux.set(lux)
 
 
 def parse_args():
@@ -340,6 +366,7 @@ def main():
         HUMIDITY: Gauge("humidity_pct", "Humidity inside in percent"),
         CO2: Gauge("co2_ppm", "CO2 in ppm"),
         PM25: Gauge("pm25", "Particles in air", ["measurement"]),
+        LUX: Gauge("lux", "Light in Lux units"),
     }
 
     for temp_sensor_name in temp_sensors.values():

@@ -4,3 +4,4 @@ prometheus-client
 adafruit-circuitpython-scd4x
 adafruit-circuitpython-pm25
 pytest
+adafruit-circuitpython-veml7700
