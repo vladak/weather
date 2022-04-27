@@ -72,6 +72,7 @@ def sensor_loop(
     try:
         sgp30_sensor = adafruit_sgp30.Adafruit_SGP30(i2c)
         sgp30_sensor.iaq_init()
+        sgp30_sensor.set_iaq_baseline(0x83d5, 0x887d)
     except RuntimeError as exc:
         logger.error(f"cannot instantiate TVOC sensor: {exc}")
         sgp30_sensor = None
