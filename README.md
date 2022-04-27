@@ -80,8 +80,9 @@ can be scraped by Prometheus.
 D5F2CF020000 = kuchyne
 
 [global]
-# Name of the sensor from the 'temp_sensors' section that measures outside temperature.
+# Use name of the sensors from the 'temp_sensors' section.
 outside_temp_name = terasa
+inside_temp_name = kuchyne
 # altitude (in meters) for computing atmospheric pressure at sea level
 altitude = 245
 # Overrids the --loglevel command line option
