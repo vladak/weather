@@ -26,6 +26,7 @@ These metrics are collected:
 | [CO2](https://en.wikipedia.org/wiki/Carbon_dioxide) and [humidity](https://en.wikipedia.org/wiki/Humidity) | [SCD-40](https://www.adafruit.com/product/5187) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) | [Python libraries](https://github.com/adafruit/Adafruit_CircuitPython_SCD4x) |
 | [air particles](https://en.wikipedia.org/wiki/Particulates) | [PMSA003I](https://www.adafruit.com/product/4632) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) | [Python libraries]( https://github.com/adafruit/Adafruit_CircuitPython_PM25) |
 | light in [Lux](https://en.wikipedia.org/wiki/Lux) | [Adafruit VEML7700](https://www.adafruit.com/product/4162) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) | [Python libraries](https://github.com/adafruit/Adafruit_CircuitPython_VEML7700) |
+| [TVOC](https://en.wikipedia.org/wiki/Volatile_organic_compound#Indoor_VOCs) | [Adafruit SGP30](https://www.adafruit.com/product/3709) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) | [Python libraries](https://github.com/adafruit/Adafruit_CircuitPython_SGP30) |
 
 The I2C sensors are connected to the [Raspberry Pi](https://www.raspberrypi.org/) via the [SparkFun Qwiic / STEMMA QT HAT](https://www.adafruit.com/product/4688) that offers 4 [Stemma Qt](https://learn.adafruit.com/introducing-adafruit-stemma-qt/what-is-stemma-qt) ports.
 
