@@ -72,7 +72,7 @@ def sensor_loop(
     try:
         sgp30_sensor = adafruit_sgp30.Adafruit_SGP30(i2c)
         sgp30_sensor.iaq_init()
-        sgp30_sensor.set_iaq_baseline(0x83d5, 0x887d)
+        sgp30_sensor.set_iaq_baseline(0x83D5, 0x887D)
     except RuntimeError as exc:
         logger.error(f"cannot instantiate TVOC sensor: {exc}")
         sgp30_sensor = None
@@ -140,6 +140,8 @@ def acquire_tvoc(gauge, sgp30_sensor, relative_humidity, temp_celsius):
     if tvoc and tvoc != 0:  # the initial reading is 0
         logger.debug(f"Got TVOC reading: {tvoc}")
         gauge.set(tvoc)
+
+    logger.debug(f"TVOC baseline: {sgp30_sensor.baseline_TVOC}")
 
     return tvoc
 
