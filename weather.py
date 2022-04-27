@@ -124,10 +124,11 @@ def acquire_tvoc(gauge, sgp30_sensor, relative_humidity, temp_celsius):
 
     if relative_humidity and temp_celsius:
         logger.debug(
-            f"Calibrating the TVOC sensor with {temp_celsius} and {relative_humidity}"
+            f"Calibrating the TVOC sensor with temperature={temp_celsius} "
+            f"and relative_humidity={relative_humidity}"
         )
         sgp30_sensor.set_iaq_relative_humidity(
-            celcius=temp_celsius, relative_humidity=relative_humidity
+            celcius=int(temp_celsius), relative_humidity=int(relative_humidity)
         )
 
     tvoc = sgp30_sensor.TVOC
