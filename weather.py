@@ -92,8 +92,9 @@ def sensor_loop(
         if veml7700_sensor:
             acquire_light(gauges[LUX], veml7700_sensor)
 
-        # Acquire temperature before pressure so that pressure at sea level
+        # Acquire outside temperature before pressure so that pressure at sea level
         # can be computed as soon as possible.
+        # Similarly, the inside temperature is used for TVOC sensor calibration.
         outside_temp, inside_temp = acquire_temperature(
             gauges, owfsdir, temp_sensors, temp_outside_name, temp_inside_name
         )
