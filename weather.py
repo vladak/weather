@@ -35,7 +35,7 @@ def sea_level_pressure(pressure, outside_temp, altitude):
     Convert sensor pressure value to value at the sea level.
     The formula uses outside temperature to compensate.
     """
-    temp_comp = float(outside_temp) + 273.15
+    temp_comp = outside_temp + 273.15
     return pressure / pow(1.0 - 0.0065 * int(altitude) / temp_comp, 5.255)
 
 
@@ -123,8 +123,6 @@ def acquire_tvoc(gauge, sgp30_sensor, relative_humidity, temp_celsius):
     logger = logging.getLogger(__name__)
 
     if relative_humidity and temp_celsius:
-        relative_humidity = int(relative_humidity)
-        temp_celsius = int(temp_celsius)
         logger.debug(
             f"Calibrating the TVOC sensor with temperature={temp_celsius} "
             f"and relative_humidity={relative_humidity}"
@@ -170,7 +168,7 @@ def acquire_temperature(
 ):
     """
     Read temperature using OWFS.
-    :param gauges:
+    :param gauges: dictionary of Gauge objects
     :param owfsdir: OWFS directory
     :param temp_sensors: dictionary of ID to name
     :param temp_outside_name: name of the outside temperature sensor
@@ -196,10 +194,10 @@ def acquire_temperature(
             gauges[sensor_name].set(temp)
 
             if sensor_name == temp_outside_name:
-                outside_temp = temp
+                outside_temp = float(temp)
 
             if sensor_name == temp_inside_name:
-                inside_temp = temp
+                inside_temp = float(temp)
 
     return outside_temp, inside_temp
 
