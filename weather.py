@@ -34,6 +34,10 @@ def sea_level_pressure(pressure, outside_temp, altitude):
     """
     Convert sensor pressure value to value at the sea level.
     The formula uses outside temperature to compensate.
+    :param pressure: measured pressure
+    :param outside_temp: outside temperature (float)
+    :param altitude: altitude
+    :return: pressure at sea level
     """
     temp_comp = outside_temp + 273.15
     return pressure / pow(1.0 - 0.0065 * int(altitude) / temp_comp, 5.255)
