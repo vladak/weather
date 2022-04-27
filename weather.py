@@ -106,9 +106,7 @@ def sensor_loop(
             acquire_pm25(gauges[PM25], pm25_sensor)
 
         if sgp30_sensor:
-            acquire_tvoc(
-                gauges[TVOC], sgp30_sensor, int(relative_humidity), int(inside_temp)
-            )
+            acquire_tvoc(gauges[TVOC], sgp30_sensor, relative_humidity, inside_temp)
 
         time.sleep(sleep_timeout)
 
@@ -125,6 +123,8 @@ def acquire_tvoc(gauge, sgp30_sensor, relative_humidity, temp_celsius):
     logger = logging.getLogger(__name__)
 
     if relative_humidity and temp_celsius:
+        relative_humidity = int(relative_humidity)
+        temp_celsius = int(temp_celsius)
         logger.debug(
             f"Calibrating the TVOC sensor with temperature={temp_celsius} "
             f"and relative_humidity={relative_humidity}"
