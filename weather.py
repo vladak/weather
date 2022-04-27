@@ -106,7 +106,9 @@ def sensor_loop(
             acquire_pm25(gauges[PM25], pm25_sensor)
 
         if sgp30_sensor:
-            acquire_tvoc(gauges[TVOC], sgp30_sensor, relative_humidity, inside_temp)
+            acquire_tvoc(
+                gauges[TVOC], sgp30_sensor, int(relative_humidity), int(inside_temp)
+            )
 
         time.sleep(sleep_timeout)
 
@@ -128,7 +130,7 @@ def acquire_tvoc(gauge, sgp30_sensor, relative_humidity, temp_celsius):
             f"and relative_humidity={relative_humidity}"
         )
         sgp30_sensor.set_iaq_relative_humidity(
-            celcius=int(temp_celsius), relative_humidity=int(relative_humidity)
+            celcius=temp_celsius, relative_humidity=relative_humidity
         )
 
     tvoc = sgp30_sensor.TVOC
