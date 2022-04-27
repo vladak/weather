@@ -13,6 +13,7 @@ import time
 
 import adafruit_bmp280
 import adafruit_scd4x
+import adafruit_sgp30
 import adafruit_veml7700
 import board
 from adafruit_pm25.i2c import PM25_I2C
@@ -26,6 +27,7 @@ HUMIDITY = "humidity"
 LUX = "Lux"
 CO2 = "CO2"
 PM25 = "PM25"
+TVOC = "TVOC"
 
 
 def sea_level_pressure(pressure, outside_temp, altitude):
@@ -37,9 +39,15 @@ def sea_level_pressure(pressure, outside_temp, altitude):
     return pressure / pow(1.0 - 0.0065 * int(altitude) / temp_comp, 5.255)
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-locals
 def sensor_loop(
-    sleep_timeout, owfsdir, altitude, temp_sensors, temp_outside_name, gauges
+    sleep_timeout,
+    owfsdir,
+    altitude,
+    temp_sensors,
+    temp_outside_name,
+    temp_inside_name,
+    gauges,
 ):
     """
     main loop in which sensor values are collected and set into Prometheus
@@ -57,21 +65,32 @@ def sensor_loop(
         logger.error(f"cannot instantiate Lux sensor: {exc}")
         veml7700_sensor = None
 
+    try:
+        sgp30_sensor = adafruit_sgp30.Adafruit_SGP30(i2c)
+        sgp30_sensor.iaq_init()
+    except RuntimeError as exc:
+        logger.error(f"cannot instantiate TVOC sensor: {exc}")
+        sgp30_sensor = None
+
     if scd4x_sensor:
         logger.info("Waiting for the first measurement from the SCD-40 sensor")
         scd4x_sensor.start_periodic_measurement()
 
     while True:
+        relative_humidity = None
+
         if scd4x_sensor:
-            acquire_scd4x(gauges[CO2], gauges[HUMIDITY], scd4x_sensor)
+            relative_humidity = acquire_scd4x(
+                gauges[CO2], gauges[HUMIDITY], scd4x_sensor
+            )
 
         if veml7700_sensor:
             acquire_light(gauges[LUX], veml7700_sensor)
 
         # Acquire temperature before pressure so that pressure at sea level
         # can be computed as soon as possible.
-        outside_temp = acquire_temperature(
-            gauges, owfsdir, temp_sensors, temp_outside_name
+        outside_temp, inside_temp = acquire_temperature(
+            gauges, owfsdir, temp_sensors, temp_outside_name, temp_inside_name
         )
 
         if bmp_sensor:
@@ -86,7 +105,37 @@ def sensor_loop(
         if pm25_sensor:
             acquire_pm25(gauges[PM25], pm25_sensor)
 
+        if sgp30_sensor:
+            acquire_tvoc(gauges[TVOC], sgp30_sensor, relative_humidity, inside_temp)
+
         time.sleep(sleep_timeout)
+
+
+def acquire_tvoc(gauge, sgp30_sensor, relative_humidity, temp_celsius):
+    """
+    :param gauge: Gauge object
+    :param sgp30_sensor: sensor instance
+    :param relative_humidity: relative humidity (for calibration)
+    :param temp_celsius: temperature (for calibration)
+    :return: TVOC
+    """
+
+    logger = logging.getLogger(__name__)
+
+    if relative_humidity and temp_celsius:
+        logger.debug(
+            f"Calibrating the TVOC sensor with {temp_celsius} and {relative_humidity}"
+        )
+        sgp30_sensor.set_iaq_relative_humidity(
+            celcius=temp_celsius, relative_humidity=relative_humidity
+        )
+
+    tvoc = sgp30_sensor.TVOC
+    if tvoc and tvoc != 0:  # the initial reading is 0
+        logger.debug(f"Got TVOC reading: {tvoc}")
+        gauge.set(tvoc)
+
+    return tvoc
 
 
 def acquire_pm25(gauge, pm25_sensor):
@@ -113,19 +162,22 @@ def acquire_pm25(gauge, pm25_sensor):
         gauge.labels(measurement=label_name).set(value)
 
 
-def acquire_temperature(gauges, owfsdir, temp_sensors, temp_outside_name):
+def acquire_temperature(
+    gauges, owfsdir, temp_sensors, temp_outside_name, temp_inside_name
+):
     """
     Read temperature using OWFS.
     :param gauges:
     :param owfsdir: OWFS directory
     :param temp_sensors: dictionary of ID to name
     :param temp_outside_name: name of the outside temperature sensor
-    :return: outside temperature
+    :return: (outside temperature, inside temperature)
     """
 
     logger = logging.getLogger(__name__)
 
     outside_temp = None
+    inside_temp = None
     logger.debug(f"temperature sensors: {dict(temp_sensors.items())}")
     for sensor_id, sensor_name in temp_sensors.items():
         file_path = os.path.join(owfsdir, "28." + sensor_id, "temperature")
@@ -143,7 +195,10 @@ def acquire_temperature(gauges, owfsdir, temp_sensors, temp_outside_name):
             if sensor_name == temp_outside_name:
                 outside_temp = temp
 
-    return outside_temp
+            if sensor_name == temp_inside_name:
+                inside_temp = temp
+
+    return outside_temp, inside_temp
 
 
 def acquire_pressure(
@@ -177,7 +232,7 @@ def acquire_scd4x(gauge_co2, gauge_humidity, scd4x_sensor):
     :param gauge_co2: Gauge object
     :param gauge_humidity: Gauge object
     :param scd4x_sensor:
-    :return:
+    :return: relative humidity
     """
 
     logger = logging.getLogger(__name__)
@@ -191,6 +246,8 @@ def acquire_scd4x(gauge_co2, gauge_humidity, scd4x_sensor):
     if humidity:
         logger.debug(f"humidity={humidity:.1f}%")
         gauge_humidity.set(humidity)
+
+    return humidity
 
 
 def acquire_light(gauge_lux, light_sensor):
@@ -281,7 +338,8 @@ def config_load(config, config_file):
     Load temperature sensor information. Will exit the program on failure.
     :param config: configparser instance
     :param config_file: configuration file (for logging)
-    :return: (dictionary of 1-wire ID to name, name of outside temperature sensor, altitude)
+    :return: (dictionary of 1-wire ID to name, name of outside temperature sensor,
+    name of the inside temperature sensor, altitude)
     """
 
     logger = logging.getLogger(__name__)
@@ -318,9 +376,24 @@ def config_load(config, config_file):
             f"not present in temperature sensors: {temp_sensors}"
         )
 
+    inside_temp_name = "inside_temp_name"
+    inside_temp = config[global_section_name].get(inside_temp_name)
+    if not inside_temp:
+        raise ConfigException(
+            f"Section {global_section_name} does not contain {inside_temp_name}"
+        )
+
+    logger.debug(f"inside temperature sensor: {inside_temp}")
+
+    if inside_temp not in temp_sensors.values():
+        raise ConfigException(
+            f"name of inside temperature sensor ({inside_temp_name}) "
+            f"not present in temperature sensors: {temp_sensors}"
+        )
+
     altitude = conf_get_altitude(config, global_section_name)
 
-    return temp_sensors, outside_temp, altitude
+    return temp_sensors, outside_temp, inside_temp, altitude
 
 
 def main():
@@ -353,7 +426,9 @@ def main():
             logger.setLevel(config_log_level)
 
     try:
-        temp_sensors, temp_outside_name, altitude = config_load(config, args.config)
+        temp_sensors, temp_outside_name, temp_inside_name, altitude = config_load(
+            config, args.config
+        )
     except ConfigException as exc:
         logger.error(f"Failed to process config file: {exc}")
         sys.exit(1)
@@ -367,6 +442,7 @@ def main():
         CO2: Gauge("co2_ppm", "CO2 in ppm"),
         PM25: Gauge("pm25", "Particles in air", ["measurement"]),
         LUX: Gauge("lux", "Light in Lux units"),
+        TVOC: Gauge("tvoc", "Total Volatile Organic Compounds"),
     }
 
     for temp_sensor_name in temp_sensors.values():
@@ -391,6 +467,7 @@ def main():
             altitude,
             temp_sensors,
             temp_outside_name,
+            temp_inside_name,
             gauges,
         ],
     )
