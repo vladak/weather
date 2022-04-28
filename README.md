@@ -128,7 +128,7 @@ scrape_configs:
 
 The Weather dashboard looks like this:
 
-![Weather dashboard](/img/grafana-weather.jpg)
+![Weather dashboard](/img/grafana-weather.png)
 
 In the graphs one can see the CO2 metric above the threshold. This generated an alert.
 
