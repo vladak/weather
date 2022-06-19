@@ -190,12 +190,12 @@ def acquire_temperature(
     logger.debug(f"temperature sensors: {dict(temp_sensors.items())}")
     for sensor_id, sensor_name in temp_sensors.items():
         file_path = os.path.join(owfsdir, "28." + sensor_id, "temperature")
-        with open(file_path, "r", encoding="ascii") as file_obj:
-            try:
+        try:
+            with open(file_path, "r", encoding="ascii") as file_obj:
                 temp = file_obj.read()
-            except OSError as exception:
-                logger.error(f"error while reading {file_path}: {exception}")
-                continue
+        except OSError as exception:
+            logger.error(f"error while reading '{file_path}': {exception}")
+            continue
 
         if temp:
             logger.debug(f"{sensor_name} temp={temp}")
