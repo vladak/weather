@@ -61,8 +61,15 @@ def sensor_loop(
 
     i2c = board.I2C()
     bmp_sensor = adafruit_bmp280.Adafruit_BMP280_I2C(i2c)
-    scd4x_sensor = adafruit_scd4x.SCD4X(i2c)
+
+    scd4x_sensor = None
+    try:
+        scd4x_sensor = adafruit_scd4x.SCD4X(i2c)
+    except ValueError as exception:
+        logger.error(f"cannot find SCD4x sensor: {exception}")
+
     pm25_sensor = PM25_I2C(i2c, None)
+
     try:
         veml7700_sensor = adafruit_veml7700.VEML7700(i2c)
     except RuntimeError as exc:
