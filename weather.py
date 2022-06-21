@@ -140,11 +140,13 @@ def write_baselines(sgp30_sensor, file):
     co2_baseline = sgp30_sensor.baseline_eCO2
 
     if tvoc_baseline != 0 and co2_baseline != 0:
-        logger.debug(f"writing baselines to {file}: TVOC={tvoc_baseline}, CO2={co2_baseline}")
+        logger.debug(
+            f"writing baselines to {file}: TVOC={tvoc_baseline}, CO2={co2_baseline}"
+        )
 
         with open(file, "wb") as file_obj:
-            file_obj.write(tvoc_baseline.to_bytes(2, byteorder='big', signed=False))
-            file_obj.write(co2_baseline.to_bytes(2, byteorder='big', signed=False))
+            file_obj.write(tvoc_baseline.to_bytes(2, byteorder="big", signed=False))
+            file_obj.write(co2_baseline.to_bytes(2, byteorder="big", signed=False))
 
 
 def read_baselines(file):
@@ -159,9 +161,9 @@ def read_baselines(file):
 
     with open(file, "rb") as file_obj:
         tvoc_bytes = file_obj.read(2)
-        tvoc_baseline = int.from_bytes(tvoc_bytes, byteorder='big')
+        tvoc_baseline = int.from_bytes(tvoc_bytes, byteorder="big")
         co2_bytes = file_obj.read(2)
-        co2_baseline = int.from_bytes(co2_bytes, byteorder='big')
+        co2_baseline = int.from_bytes(co2_bytes, byteorder="big")
         logger.debug(f"got baselines: TVOC={tvoc_baseline}, CO2={co2_baseline}")
 
     return tvoc_baseline, co2_baseline
