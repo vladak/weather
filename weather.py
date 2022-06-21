@@ -29,6 +29,8 @@ CO2 = "CO2"
 PM25 = "PM25"
 TVOC = "TVOC"
 
+BASELINE_FILE = "tvoc_baselines.dat"
+
 
 def sea_level_pressure(pressure, outside_temp, altitude):
     """
@@ -78,10 +80,15 @@ def sensor_loop(
 
     try:
         sgp30_sensor = adafruit_sgp30.Adafruit_SGP30(i2c)
+        # TODO: the iaq_init() should not be needed - it is done in the Adafruit_SGP30()
         sgp30_sensor.iaq_init()
-        sgp30_sensor.set_iaq_baseline(0x83D5, 0x887D)
-    except RuntimeError as exc:
-        logger.error(f"cannot instantiate TVOC sensor: {exc}")
+        try:
+            tvoc_baseline, co2_baseline = read_baselines(BASELINE_FILE)
+            sgp30_sensor.set_iaq_baseline(co2_baseline, tvoc_baseline)
+        except OSError as exception:
+            logger.error(f"failed to get baselines for the TVOC sensor: {exception}")
+    except RuntimeError as exception:
+        logger.error(f"cannot instantiate TVOC sensor: {exception}")
         sgp30_sensor = None
 
     if scd4x_sensor:
@@ -124,6 +131,42 @@ def sensor_loop(
         time.sleep(sleep_timeout)
 
 
+def write_baselines(sgp30_sensor, file):
+    """
+    :param sgp30_sensor: sensor instance
+    :param file: output file
+    """
+    logger = logging.getLogger(__name__)
+
+    tvoc_baseline = sgp30_sensor.baseline_TVOC
+    co2_baseline = sgp30_sensor.baseline_eCO2
+    logger.debug(f"writing baselines to {file}: TVOC={tvoc_baseline}, CO2={co2_baseline}")
+
+    with open(file, "wb") as fp:
+        fp.write(tvoc_baseline.to_bytes(2, byteorder='big', signed=False))
+        fp.write(co2_baseline.to_bytes(2, byteorder='big', signed=False))
+
+
+def read_baselines(file):
+    """
+    Read baseline values for the TVOC sensor. Setting the baseline values to the sensor
+    makes the measurements available earlier than 12 hours after the sensor was initialized.
+    The file is expected to contain 4 bytes - 2 bytes for each baseline value.
+    :param file: input file
+    :return: tuple of integers - TVOC and CO2 baseline
+    """
+    logger = logging.getLogger(__name__)
+
+    with open(file, "rb") as fp:
+        tvoc_bytes = fp.read(2)
+        tvoc_baseline = int.from_bytes(tvoc_bytes, byteorder='big')
+        co2_bytes = fp.read(2)
+        co2_baseline = int.from_bytes(co2_bytes, byteorder='big')
+        logger.debug(f"got baselines: TVOC={tvoc_baseline}, CO2={co2_baseline}")
+
+    return tvoc_baseline, co2_baseline
+
+
 def acquire_tvoc(gauge, sgp30_sensor, relative_humidity, temp_celsius):
     """
     :param gauge: Gauge object
@@ -149,7 +192,17 @@ def acquire_tvoc(gauge, sgp30_sensor, relative_humidity, temp_celsius):
         logger.debug(f"Got TVOC reading: {tvoc}")
         gauge.set(tvoc)
 
-    logger.debug(f"TVOC baseline: {sgp30_sensor.baseline_TVOC}")
+    try:
+        if os.path.exists(BASELINE_FILE):
+            # Make the baseline values persistent every hour or so.
+            baseline_mtime = os.path.getmtime(BASELINE_FILE)
+            current_time = time.time()
+            if baseline_mtime < current_time - 3600:
+                write_baselines(sgp30_sensor, BASELINE_FILE)
+        else:
+            write_baselines(sgp30_sensor, BASELINE_FILE)
+    except OSError as exception:
+        logger.error(f"failed to write TVOC baselines to {BASELINE_FILE}: {exception}")
 
     return tvoc
 
