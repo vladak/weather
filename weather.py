@@ -80,8 +80,6 @@ def sensor_loop(
 
     try:
         sgp30_sensor = adafruit_sgp30.Adafruit_SGP30(i2c)
-        # TODO: the iaq_init() should not be needed - it is done in the Adafruit_SGP30()
-        sgp30_sensor.iaq_init()
         try:
             tvoc_baseline, co2_baseline = read_baselines(BASELINE_FILE)
             sgp30_sensor.set_iaq_baseline(co2_baseline, tvoc_baseline)
