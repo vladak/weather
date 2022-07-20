@@ -74,6 +74,8 @@ can be scraped by Prometheus.
 - install pre-requisites:
 ```
 sudo apt-get -y install  python3-venv
+# needed for bmp280 Python package (it needs to compile stuff)
+sudo apt-get install python3-dev
 ```
 - install requirements
 ```
