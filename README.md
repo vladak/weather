@@ -158,7 +158,7 @@ e.g. when the CO2 metric rises above given level (time to open a window).
 ```
 - setup sound card in Alsa config:
 ```
-  sed -i /usr/share/alsa/alsa.conf \
+  sudo sed -i /usr/share/alsa/alsa.conf \
       -e 's/^defaults.ctl.card 0/defaults.ctl.card 1/' \
       -e 's/^defaults.pcm.card 0/defaults.pcm.card 1/'
 ```
