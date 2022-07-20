@@ -109,6 +109,10 @@ altitude = 245
   sudo systemctl start weather
   sudo systemctl status weather
 ```
+Check the metrics:
+```
+curl http://localhost:8111
+```
 
 ## Prometheus
 
