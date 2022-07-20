@@ -71,6 +71,10 @@ can be scraped by Prometheus.
 ```
   git clone https://github.com/vladak/weather.git /srv/weather
 ```
+- install pre-requisites:
+```
+sudo apt-get -y install  python3-venv
+```
 - install requirements
 ```
   cd /srv/weather
