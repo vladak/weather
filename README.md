@@ -50,6 +50,10 @@ The I2C sensors are connected to the [Raspberry Pi](https://www.raspberrypi.org/
 ```
 server: usb = all
 ```
+and restart the service:
+```
+sudo systemctl restart owfs
+```
 
 Initially this was not working and the `owfs` service complained about no bus
 being seen. `apt-get update && apt-get upgrade` pulled bunch of raspberrypi
