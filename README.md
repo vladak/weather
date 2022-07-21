@@ -196,7 +196,7 @@ end_hr = 20
   sudo systemctl enable alert
   sudo systemctl daemon-reload
   sudo systemctl start alert
-  sudo systemctl status alert
+  systemctl status alert
 ```
 
 ## Links
