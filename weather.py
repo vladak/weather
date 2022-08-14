@@ -37,7 +37,7 @@ def sea_level_pressure(pressure, outside_temp, altitude):
     Convert sensor pressure value to value at the sea level.
     The formula uses outside temperature to compensate.
     :param pressure: measured pressure
-    :param outside_temp: outside temperature (float)
+    :param outside_temp: outside temperature in degrees of Celsius (float)
     :param altitude: altitude
     :return: pressure at sea level
     """
@@ -112,12 +112,21 @@ def sensor_loop(
         )
 
         if bmp_sensor:
+            # Fall back to inside temperature if outside temperature measurement is not available.
+            # Assumes the availability of the outside temperature measurement does not flap.
+            temp = outside_temp
+            if not temp:
+                logger.warning(
+                    "Falling back to inside temperature for pressure at the sea level calculation"
+                )
+                temp = inside_temp
+
             acquire_pressure(
                 bmp_sensor,
                 gauges[PRESSURE],
                 gauges[PRESSURE_SEA],
                 altitude,
-                outside_temp,
+                temp,
             )
 
         if pm25_sensor:
@@ -281,7 +290,7 @@ def acquire_pressure(
     :param gauge_pressure: Gauge object
     :param gauge_pressure_sea: Gauge object
     :param height:
-    :param outside_temp:
+    :param outside_temp: outside temperature in degrees of Celsius
     :return:
     """
 
