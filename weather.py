@@ -17,6 +17,11 @@ import adafruit_sgp30
 import adafruit_veml7700
 import board
 from adafruit_pm25.i2c import PM25_I2C
+from prometheus_api_client import (
+    MetricsList,
+    PrometheusApiClientException,
+    PrometheusConnect,
+)
 from prometheus_client import Gauge, start_http_server
 
 from logutil import LogLevelAction, get_log_level
@@ -54,6 +59,7 @@ def sensor_loop(
     temp_outside_name,
     temp_inside_name,
     gauges,
+    prometheus_url,
 ):
     """
     main loop in which sensor values are collected and set into Prometheus
@@ -93,6 +99,8 @@ def sensor_loop(
         logger.info("Waiting for the first measurement from the SCD-40 sensor")
         scd4x_sensor.start_periodic_measurement()
 
+    prometheus_connect = PrometheusConnect(url=prometheus_url)
+
     while True:
         relative_humidity = None
 
@@ -107,8 +115,12 @@ def sensor_loop(
         # Acquire outside temperature before pressure so that pressure at sea level
         # can be computed as soon as possible.
         # Similarly, the inside temperature is used for TVOC sensor calibration.
-        outside_temp, inside_temp = acquire_temperature(
-            gauges, owfsdir, temp_sensors, temp_outside_name, temp_inside_name
+        inside_temp = acquire_owfs_temperature(
+            gauges, owfsdir, temp_sensors, temp_inside_name
+        )
+
+        outside_temp = acquire_prometheus_temperature(
+            prometheus_connect, temp_outside_name
         )
 
         if bmp_sensor:
@@ -242,22 +254,19 @@ def acquire_pm25(gauge, pm25_sensor):
         gauge.labels(measurement=label_name).set(value)
 
 
-def acquire_temperature(
-    gauges, owfsdir, temp_sensors, temp_outside_name, temp_inside_name
-):
+def acquire_owfs_temperature(gauges, owfsdir, temp_sensors, temp_name):
     """
-    Read temperature using OWFS.
+    Read temperature single temperature value using OWFS.
     :param gauges: dictionary of Gauge objects
     :param owfsdir: OWFS directory
     :param temp_sensors: dictionary of ID to name
-    :param temp_outside_name: name of the outside temperature sensor
-    :return: (outside temperature, inside temperature)
+    :param temp_name: name of the temperature sensor
+    :return: temperature as float value in degrees of Celsius
     """
 
     logger = logging.getLogger(__name__)
 
-    outside_temp = None
-    inside_temp = None
+    temp_value = None
     logger.debug(f"temperature sensors: {dict(temp_sensors.items())}")
     for sensor_id, sensor_name in temp_sensors.items():
         file_path = os.path.join(owfsdir, "28." + sensor_id, "temperature")
@@ -272,13 +281,51 @@ def acquire_temperature(
             logger.debug(f"{sensor_name} temp={temp}")
             gauges[sensor_name].set(temp)
 
-            if sensor_name == temp_outside_name:
-                outside_temp = float(temp)
+            if sensor_name == temp_name:
+                temp_value = float(temp)
+                break
 
-            if sensor_name == temp_inside_name:
-                inside_temp = float(temp)
+    return temp_value
 
-    return outside_temp, inside_temp
+
+def extract_metric_from_data(data):
+    """
+    Given JSON string received as a result of Prometheus query,
+    extract metric value and return as string
+    :param data: JSON string
+    :return: metric value as string
+    """
+    temp_list = MetricsList(data)
+    metric = temp_list[0]
+    return str(metric.metric_values.y[0])
+
+
+def acquire_prometheus_temperature(prometheus_connect, sensor_name):
+    """
+    Return single temperature reading from Prometheus query.
+    :param prometheus_connect: Prometheus connect instance
+    :param sensor_name: name of the temperature sensor
+    :return: temperature as float value in degrees of Celsius
+    """
+
+    logger = logging.getLogger(__name__)
+
+    temp_value = None
+
+    my_label_config = {"sensor": sensor_name}
+    try:
+        temp_data = prometheus_connect.get_current_metric_value(
+            metric_name="temperature", label_config=my_label_config
+        )
+        logger.debug(f"Got Prometheus reply for sensor '{sensor_name}': {temp_data}")
+        temp = extract_metric_from_data(temp_data)
+        temp_value = float(temp)
+    except (PrometheusApiClientException, IndexError) as req_exc:
+        logger.error(
+            f"cannot get data for temperature sensor '{sensor_name}' from Prometheus: {req_exc}"
+        )
+
+    return temp_value
 
 
 def acquire_pressure(
@@ -391,6 +438,7 @@ class ConfigException(Exception):
 def conf_get_altitude(config, global_section_name):
     """
     :param config: configparser instance
+    :param global_section_name: name of the global section
     :return: altitude value (int)
     """
     logger = logging.getLogger(__name__)
@@ -419,7 +467,7 @@ def config_load(config, config_file):
     :param config: configparser instance
     :param config_file: configuration file (for logging)
     :return: (dictionary of 1-wire ID to name, name of outside temperature sensor,
-    name of the inside temperature sensor, altitude)
+    name of the inside temperature sensor, altitude, Prometheus URL)
     """
 
     logger = logging.getLogger(__name__)
@@ -441,6 +489,15 @@ def config_load(config, config_file):
             f"the {global_section_name} section"
         )
 
+    prometheus_url_name = "prometheus_url"
+    prometheus_url = config[global_section_name].get(prometheus_url_name)
+    if not prometheus_url:
+        raise ConfigException(
+            f"Section {global_section_name} does not contain {prometheus_url_name}"
+        )
+
+    logger.debug(f"Prometheus URL: {prometheus_url}")
+
     outside_temp_name = "outside_temp_name"
     outside_temp = config[global_section_name].get(outside_temp_name)
     if not outside_temp:
@@ -449,12 +506,6 @@ def config_load(config, config_file):
         )
 
     logger.debug(f"outside temperature sensor: {outside_temp}")
-
-    if outside_temp not in temp_sensors.values():
-        raise ConfigException(
-            f"name of outside temperature sensor ({outside_temp_name}) "
-            f"not present in temperature sensors: {temp_sensors}"
-        )
 
     inside_temp_name = "inside_temp_name"
     inside_temp = config[global_section_name].get(inside_temp_name)
@@ -473,7 +524,7 @@ def config_load(config, config_file):
 
     altitude = conf_get_altitude(config, global_section_name)
 
-    return temp_sensors, outside_temp, inside_temp, altitude
+    return temp_sensors, outside_temp, inside_temp, altitude, prometheus_url
 
 
 def main():
@@ -506,9 +557,13 @@ def main():
             logger.setLevel(config_log_level)
 
     try:
-        temp_sensors, temp_outside_name, temp_inside_name, altitude = config_load(
-            config, args.config
-        )
+        (
+            temp_sensors,
+            temp_outside_name,
+            temp_inside_name,
+            altitude,
+            prometheus_url,
+        ) = config_load(config, args.config)
     except ConfigException as exc:
         logger.error(f"Failed to process config file: {exc}")
         sys.exit(1)
@@ -549,6 +604,7 @@ def main():
             temp_outside_name,
             temp_inside_name,
             gauges,
+            prometheus_url,
         ],
     )
     thread.start()
