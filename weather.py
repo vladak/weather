@@ -312,10 +312,9 @@ def acquire_prometheus_temperature(prometheus_connect, sensor_name):
 
     temp_value = None
 
-    my_label_config = {"sensor": sensor_name}
     try:
-        temp_data = prometheus_connect.get_current_metric_value(
-            metric_name="temperature", label_config=my_label_config
+        temp_data = prometheus_connect.custom_query(
+            "last_over_time(temperature{sensor='" + sensor_name + "'}[30m])"
         )
         logger.debug(f"Got Prometheus reply for sensor '{sensor_name}': {temp_data}")
         temp = extract_metric_from_data(temp_data)
