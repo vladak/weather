@@ -148,8 +148,8 @@ def handle_grafana_payload(payload, name2file, play_queue):
     # Also, it is assumed that the top-level 'status' field is equal to
     # all status fields in the individual alerts in the payload.
     #
-    if status != "alerting":
-        logger.info(f'status not "alerting" in the alert payload: {payload}')
+    if status != "firing":
+        logger.info(f'status not "firing" in the alert payload: {payload}')
         return False
 
     alerts = payload.get("alerts")

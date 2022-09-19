@@ -15,7 +15,7 @@ def test_payload_no_alert_name_match():
     Payload with not matching 'alertname' should not play the song.
     """
     alert_name = "foo"
-    payload = {"alerts": [{"labels": {"alertname": alert_name}}], "status": "alerting"}
+    payload = {"alerts": [{"labels": {"alertname": alert_name}}], "status": "firing"}
     assert not handle_grafana_payload(
         payload, {alert_name + "bar": "foo.mp3"}, queue.Queue()
     )
@@ -23,7 +23,7 @@ def test_payload_no_alert_name_match():
 
 def test_payload_no_state_match():
     """
-    Payload with 'state' not 'alerting' should not play the song.
+    Payload with 'state' not 'firing' should not play the song.
     """
     alert_name = "foo"
     payload = {"alerts": [{"labels": {"alertname": alert_name}}], "status": "pending"}
@@ -37,7 +37,7 @@ def test_payload_lower_case():
     alert_name = "foo"
     payload = {
         "alerts": [{"labels": {"alertname": alert_name.upper()}}],
-        "status": "alerting",
+        "status": "firing",
     }
     assert handle_grafana_payload(payload, {alert_name: "foo.mp3"}, queue.Queue())
 
@@ -47,7 +47,7 @@ def test_payload_will_play():
     Simple test for file successfully enqueued.
     """
     alert_name = "foo"
-    payload = {"alerts": [{"labels": {"alertname": alert_name}}], "status": "alerting"}
+    payload = {"alerts": [{"labels": {"alertname": alert_name}}], "status": "firing"}
     play_queue = queue.Queue()
     file_mp3 = "foo.mp3"
     assert handle_grafana_payload(payload, {alert_name: file_mp3}, play_queue)
