@@ -132,8 +132,6 @@ def handle_grafana_payload(payload, name2file, play_queue):
     :return True if at least one file was enqueued for playing, False otherwise.
     """
 
-    logger = logging.getLogger(__name__)
-
     if payload is None:
         raise GrafanaPayloadException("no payload, ignoring")
 
