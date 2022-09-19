@@ -169,11 +169,11 @@ e.g. when the CO2 metric rises above given level (time to open a window).
 # allows to override the --loglevel command line option
 loglevel = debug
 
-[rule2mp3]
-# The mapping from rule name to mp3 file to play.
+[name2mp3]
+# The mapping from alert name to mp3 file to play.
 # All the files in this section have to readable.
-Rule foo = foo.mp3
-Rule bar = bar.mp3
+Foo foo = foo.mp3
+Bar bar = bar.mp3
 
 # This section is optional, the defaults are 8 and 23.
 # The mp3 file will not be played outside of this range.

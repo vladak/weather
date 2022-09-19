@@ -80,12 +80,13 @@ class GrafanaAlertHandler(BaseHTTPRequestHandler):
             return
 
         try:
-            handle_grafana_alert(
+            handle_grafana_payload(
                 payload,
-                self.server.rule2file,
+                self.server.name2file,
                 self.server.play_queue,
             )
-        except GrafanaPayloadException:
+        except GrafanaPayloadException as e:
+            logger.error(e)
             self._set_response(400)
             return
 
@@ -121,45 +122,67 @@ def play_mp3(play_queue, timeout=30, mpg123="mpg123"):
 
 class GrafanaPayloadException(Exception):
     """
-    Trivial class for passing exceptions from handle_grafana_alert().
+    Trivial class for passing exceptions from handle_grafana_payload().
     """
 
 
-def handle_grafana_alert(payload, rule2file, play_queue):
+def handle_grafana_payload(payload, name2file, play_queue):
     """
-    Alert handling. Expects Grafana alert payload (JSON).
-    :return True if the file was enqueued for playing, False otherwise.
+    Alerting payload handling. Expects Grafana alert payload (JSON).
+    :return True if at least one file was enqueued for playing, False otherwise.
     """
 
     logger = logging.getLogger(__name__)
 
     if payload is None:
-        logger.error("no payload, ignoring")
-        raise GrafanaPayloadException()
+        raise GrafanaPayloadException("no payload, ignoring")
 
-    state = payload.get("state")
-    if state is None:
-        logger.error(f"No state in the alert payload: {payload}")
-        raise GrafanaPayloadException()
+    status = payload.get("status")
+    if status is None:
+        raise GrafanaPayloadException(f"No status in the alert payload: {payload}")
 
-    # Technically, "pending" state counts too, however playing the sound
-    # too often might be too obnoxious.
-    if state != "alerting":
-        logger.info(f"state not alerting in the alert payload: {payload}")
+    #
+    # Technically, "pending" status counts too, however playing the sound
+    # too often might be too annoying.
+    #
+    # Also, it is assumed that the top-level 'status' field is equal to
+    # all status fields in the individual alerts in the payload.
+    #
+    if status != "alerting":
+        logger.info(f'status not "alerting" in the alert payload: {payload}')
         return False
 
-    rule_name = payload.get("ruleName")
-    if rule_name is None:
-        logger.error(f"No 'ruleName' in payload: {payload}")
-        raise GrafanaPayloadException()
+    alerts = payload.get("alerts")
+    if alerts is None:
+        raise GrafanaPayloadException(f"No alerts in the alert payload: {payload}")
+
+    queued = False
+    for alert in alerts:
+        if handle_grafana_alert(alert, name2file, play_queue):
+            queued = True
+
+    return queued
+
+
+def handle_grafana_alert(alert, name2file, play_queue):
+    """
+    Handle single Grafana alert.
+    :return True if the file was enqueued for playing, False otherwise.
+    """
+
+    logger = logging.getLogger(__name__)
+
+    alert_name = alert.get("labels").get("alertname")
+    if alert_name is None:
+        raise GrafanaPayloadException(f"No 'alert_name' in alert: {alert}")
 
     # Python's configparser stores the keys in lower case so
-    # the ruleName needs to be matcher as lower case.
-    file_to_play = rule2file.get(rule_name.lower())
+    # the ruleName needs to be matched as lower case.
+    file_to_play = name2file.get(alert_name.lower())
     if not file_to_play:
-        logger.error(
-            f"'ruleName' value '{rule_name}' in the payload "
-            f"not found in the mappings: {rule2file}"
+        logger.info(
+            f"'alertname' value '{alert_name}' in the alert "
+            f"not found in the mappings: {name2file}"
         )
         return False
 
@@ -176,27 +199,27 @@ class GrafanaAlertHttpServer(HTTPServer):
     def __init__(
         self,
         server_address,
-        rule2file,
+        name2file,
         range_hr,
         play_queue,
         handler_class=GrafanaAlertHandler,
     ):
         super().__init__(server_address, handler_class)
-        self.rule2file = rule2file
+        self.name2file = name2file
         start_hr, end_hr = range_hr
         self.start_hr = start_hr
         self.end_hr = end_hr
         self.play_queue = play_queue
 
 
-def run_server(port, rule2file, range_hr, play_queue):
+def run_server(port, name2file, range_hr, play_queue):
     """
     Start HTTP server, will not return unless interrupted.
     """
     logger = logging.getLogger(__name__)
 
     server_address = ("localhost", port)
-    httpd = GrafanaAlertHttpServer(server_address, rule2file, range_hr, play_queue)
+    httpd = GrafanaAlertHttpServer(server_address, name2file, range_hr, play_queue)
     logger.info(f"Starting HTTP server on port {port}...")
 
     try:
@@ -244,9 +267,9 @@ def parse_args():
     )
     parser.add_argument(
         "--config",
-        help="Configuration file with mapping from 'ruleName' key value "
+        help="Configuration file with mapping from 'alertname' key value "
         "in the Grafana alert payload (exact match) to mp3 file."
-        "These should be in the 'rule2mp3' section.",
+        "These should be in the 'name2mp3' section.",
         default="alert.ini",
     )
 
@@ -267,7 +290,7 @@ def load_mp3_config(config, config_file):
 
     logger = logging.getLogger(__name__)
 
-    mp3config_section_name = "rule2mp3"
+    mp3config_section_name = "name2mp3"
     if mp3config_section_name not in config.sections():
         raise ConfigException(
             f"Config file {config_file} does not include "
@@ -357,7 +380,7 @@ def main():
             logger.setLevel(config_log_level)
 
     try:
-        rule2file = load_mp3_config(config, args.config)
+        name2file = load_mp3_config(config, args.config)
     except ConfigException as exc:
         logger.error(f"Failed to process config file: {exc}")
         sys.exit(1)
@@ -371,7 +394,7 @@ def main():
         target=play_mp3, args=(play_queue, args.timeout, args.mpg123), daemon=True
     ).start()
 
-    run_server(server_port, rule2file, (start_hr, end_hr), play_queue)
+    run_server(server_port, name2file, (start_hr, end_hr), play_queue)
 
 
 if __name__ == "__main__":
