@@ -141,17 +141,6 @@ def handle_grafana_payload(payload, name2file, play_queue):
     if status is None:
         raise GrafanaPayloadException(f"No status in the alert payload: {payload}")
 
-    #
-    # Technically, "pending" status counts too, however playing the sound
-    # too often might be too annoying.
-    #
-    # Also, it is assumed that the top-level 'status' field is equal to
-    # all status fields in the individual alerts in the payload.
-    #
-    if status != "firing":
-        logger.info(f'status not "firing" in the alert payload: {payload}')
-        return False
-
     alerts = payload.get("alerts")
     if alerts is None:
         raise GrafanaPayloadException(f"No alerts in the alert payload: {payload}")
@@ -171,6 +160,18 @@ def handle_grafana_alert(alert, name2file, play_queue):
     """
 
     logger = logging.getLogger(__name__)
+
+    #
+    # Technically, "pending" status counts too, however playing the sound
+    # too often might be too annoying.
+    #
+    status = alert.get("status")
+    if status is None:
+        raise GrafanaPayloadException(f"No status in the alert payload: {alert}")
+
+    if status != "firing":
+        logger.info(f'status not "firing" in the alert payload: {alert}')
+        return False
 
     alert_name = alert.get("labels").get("alertname")
     if alert_name is None:
