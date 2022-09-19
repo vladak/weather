@@ -163,7 +163,7 @@ e.g. when the CO2 metric rises above given level (time to open a window).
       -e 's/^defaults.pcm.card 0/defaults.pcm.card 1/'
 ```
 - copy some MP3 files (with `.mp3` suffix) to `/srv/weather/`
-- create configuration in `alert.ini` like so:
+- create configuration in `musicalert.ini` like so:
 ```
 [global]
 # allows to override the --loglevel command line option
@@ -186,17 +186,17 @@ end_hr = 20
   ```
   cd /srv/weather
   . ./env/bin/activate
-  ./alert.py -l debug
+  ./musicalert.py -l debug
   ```
   - go to Alerts -> Notification channels and hit 'Test'
   - a mp3 should be played
 - install the service
 ```
-  sudo cp /srv/weather/alert.service /etc/systemd/system/
-  sudo systemctl enable alert
+  sudo cp /srv/weather/musicalert.service /etc/systemd/system/
+  sudo systemctl enable musicalert
   sudo systemctl daemon-reload
-  sudo systemctl start alert
-  systemctl status alert
+  sudo systemctl start musicalert
+  systemctl status musicalert
 ```
 
 ## Links
