@@ -68,7 +68,7 @@ def test_grafana_payload():
     This is simple smoke test whether handle_grafana_payload() can actually
     digest sample Grafana alerting payload.
     """
-    with open("alerting_payload.json", "r") as file_obj:
+    with open("alerting_payload.json", "r", encoding="utf-8") as file_obj:
         data = file_obj.read()
         payload = json.loads(data)
 
