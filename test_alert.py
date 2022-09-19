@@ -6,7 +6,7 @@ import queue
 
 import pytest
 
-from alert import GrafanaPayloadException, handle_grafana_alert
+from musicalert import GrafanaPayloadException, handle_grafana_alert
 
 
 def test_payload_no_rule_name_match():
