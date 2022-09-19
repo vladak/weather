@@ -1,5 +1,5 @@
 """
-Test alert.py
+Test musicalert.py
 """
 
 import queue
