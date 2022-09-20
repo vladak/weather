@@ -135,6 +135,9 @@ def handle_grafana_payload(payload, name2file, play_queue):
     if payload is None:
         raise GrafanaPayloadException("no payload, ignoring")
 
+    logger = logging.getLogger(__name__)
+    logger.debug(f"Got payload: {payload}")
+
     status = payload.get("status")
     if status is None:
         raise GrafanaPayloadException(f"No status in the alert payload: {payload}")
@@ -185,6 +188,7 @@ def handle_grafana_alert(alert, name2file, play_queue):
         )
         return False
 
+    logger.debug(f"Will play '{file_to_play}' based on alert: {alert}")
     play_queue.put(file_to_play)
     return True
 
