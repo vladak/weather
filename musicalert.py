@@ -162,10 +162,6 @@ def handle_grafana_alert(alert, name2file, play_queue):
 
     logger = logging.getLogger(__name__)
 
-    #
-    # Technically, "pending" status counts too, however playing the sound
-    # too often might be too annoying.
-    #
     status = alert.get("status")
     if status is None:
         raise GrafanaPayloadException(f"No status in the alert payload: {alert}")
