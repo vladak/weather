@@ -284,7 +284,7 @@ class ConfigException(Exception):
 def load_mp3_config(config, config_file):
     """
     Load .ini configuration file. Will exit the program on error.
-    :return: dictionary with rule name to mp3 file mappings
+    :return: dictionary with alert name to mp3 file mappings
     """
 
     logger = logging.getLogger(__name__)
