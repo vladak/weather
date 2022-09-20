@@ -171,7 +171,7 @@ def handle_grafana_alert(alert, name2file, play_queue):
         raise GrafanaPayloadException(f"No status in the alert payload: {alert}")
 
     if status != "firing":
-        logger.info(f'status not "firing" in the alert payload: {alert}')
+        logger.debug(f'status not "firing" in the alert payload: {alert}')
         return False
 
     alert_name = alert.get("labels").get("alertname")
@@ -184,7 +184,7 @@ def handle_grafana_alert(alert, name2file, play_queue):
     if not file_to_play:
         logger.info(
             f"'alertname' value '{alert_name}' in the alert "
-            f"not found in the mappings: {name2file}"
+            f"not found in the mappings: {dict(name2file.items())}"
         )
         return False
 
