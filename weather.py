@@ -33,6 +33,7 @@ LUX = "Lux"
 CO2 = "CO2"
 PM25 = "PM25"
 TVOC = "TVOC"
+TEMPERATURE = "temperature"
 
 BASELINE_FILE = "tvoc_baselines.dat"
 
@@ -116,7 +117,7 @@ def sensor_loop(
         # can be computed as soon as possible.
         # Similarly, the inside temperature is used for TVOC sensor calibration.
         inside_temp = acquire_owfs_temperature(
-            gauges, owfsdir, temp_sensors, temp_inside_name
+            gauges[TEMPERATURE], owfsdir, temp_sensors, temp_inside_name
         )
 
         outside_temp = acquire_prometheus_temperature(
@@ -254,10 +255,10 @@ def acquire_pm25(gauge, pm25_sensor):
         gauge.labels(measurement=label_name).set(value)
 
 
-def acquire_owfs_temperature(gauges, owfsdir, temp_sensors, temp_name):
+def acquire_owfs_temperature(gauge, owfsdir, temp_sensors, temp_name):
     """
     Read temperature single temperature value using OWFS.
-    :param gauges: dictionary of Gauge objects
+    :param gauge: Gauge object
     :param owfsdir: OWFS directory
     :param temp_sensors: dictionary of ID to name
     :param temp_name: name of the temperature sensor
@@ -279,7 +280,7 @@ def acquire_owfs_temperature(gauges, owfsdir, temp_sensors, temp_name):
 
         if temp:
             logger.debug(f"{sensor_name} temp={temp}")
-            gauges[sensor_name].set(temp)
+            gauge.labels(sensor=sensor_name).set(temp)
 
             if sensor_name == temp_name:
                 temp_value = float(temp)
@@ -577,12 +578,10 @@ def main():
         PM25: Gauge("pm25", "Particles in air", ["measurement"]),
         LUX: Gauge("lux", "Light in Lux units"),
         TVOC: Gauge("tvoc", "Total Volatile Organic Compounds"),
+        TEMPERATURE: Gauge(
+            "temperature", "temperature in degrees of Celsius", ["sensor"]
+        ),
     }
-
-    for temp_sensor_name in temp_sensors.values():
-        gauges[temp_sensor_name] = Gauge(
-            "weather_temp_" + temp_sensor_name, "Temperature in " + temp_sensor_name
-        )
 
     logger.debug(f"Gauges: {gauges}")
 
