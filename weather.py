@@ -27,7 +27,6 @@ from prometheus_client import Gauge, start_http_server
 from logutil import LogLevelAction, get_log_level
 
 PRESSURE = "pressure"
-PRESSURE_SEA = "pressure_sea"
 HUMIDITY = "humidity"
 LUX = "Lux"
 CO2 = "CO2"
@@ -137,7 +136,6 @@ def sensor_loop(
             acquire_pressure(
                 bmp_sensor,
                 gauges[PRESSURE],
-                gauges[PRESSURE_SEA],
                 altitude,
                 temp,
             )
@@ -328,15 +326,12 @@ def acquire_prometheus_temperature(prometheus_connect, sensor_name):
     return temp_value
 
 
-def acquire_pressure(
-    bmp_sensor, gauge_pressure, gauge_pressure_sea, height, outside_temp
-):
+def acquire_pressure(bmp_sensor, gauge_pressure, altitude, outside_temp):
     """
     Read data from the pressure sensor and calculate pressure at sea level.
     :param bmp_sensor:
     :param gauge_pressure: Gauge object
-    :param gauge_pressure_sea: Gauge object
-    :param height:
+    :param altitude: altitude in meters
     :param outside_temp: outside temperature in degrees of Celsius
     :return:
     """
@@ -346,11 +341,11 @@ def acquire_pressure(
     pressure_val = bmp_sensor.pressure
     if pressure_val and pressure_val > 0:
         logger.debug(f"pressure={pressure_val}")
-        gauge_pressure.set(pressure_val)
+        gauge_pressure.labels(name="base").set(pressure_val)
         if outside_temp:
-            pressure_val = sea_level_pressure(pressure_val, outside_temp, height)
+            pressure_val = sea_level_pressure(pressure_val, outside_temp, altitude)
             logger.debug(f"pressure at sea level={pressure_val}")
-            gauge_pressure_sea.set(pressure_val)
+            gauge_pressure.labels(name="sea").set(pressure_val)
 
 
 def acquire_scd4x(gauge_co2, gauge_humidity, scd4x_sensor):
@@ -569,10 +564,7 @@ def main():
         sys.exit(1)
 
     gauges = {
-        PRESSURE: Gauge("pressure_hpa", "Barometric pressure in hPa"),
-        PRESSURE_SEA: Gauge(
-            "pressure_sea_level_hpa", "Barometric sea level pressure in hPa"
-        ),
+        PRESSURE: Gauge("pressure_hpa", "Barometric pressure in hPa", ["name"]),
         HUMIDITY: Gauge("humidity_pct", "Humidity inside in percent"),
         CO2: Gauge("co2_ppm", "CO2 in ppm"),
         PM25: Gauge("pm25", "Particles in air", ["measurement"]),
