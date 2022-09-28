@@ -1,3 +1,7 @@
+"""
+Utility functions to work with Prometheus API.
+"""
+
 import logging
 from prometheus_api_client import (
     MetricsList,
