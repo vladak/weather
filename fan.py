@@ -16,7 +16,7 @@ import sys
 import time
 from datetime import datetime
 
-from grafana_api.grafana_face import GrafanaFace
+from grafana_client.api import GrafanaApi
 from prometheus_api_client import PrometheusConnect
 from PyP100 import PyP110
 
@@ -161,7 +161,7 @@ def add_grafana_annotation(config, text):
     logger = logging.getLogger(__name__)
 
     grafana_url = config.grafana_url
-    grafana_api = GrafanaFace(auth=config.grafana_api_token, host=grafana_url)
+    grafana_api = GrafanaApi(auth=config.grafana_api_token, host=grafana_url)
     dashboard_name = config.dashboard_name
     search_results = grafana_api.search.search_dashboards(query=dashboard_name)
     search_result = None
