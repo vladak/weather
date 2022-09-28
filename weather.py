@@ -21,7 +21,7 @@ from prometheus_api_client import PrometheusConnect
 from prometheus_client import Gauge, start_http_server
 
 from logutil import LogLevelAction, get_log_level
-from prometheus_util import acquire_prometheus_temperature, extract_metric_from_data
+from prometheus_util import acquire_prometheus_temperature
 
 PRESSURE = "pressure"
 HUMIDITY = "humidity"
