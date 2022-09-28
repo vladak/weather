@@ -8,3 +8,5 @@ adafruit-circuitpython-veml7700
 adafruit-circuitpython-sgp30
 black
 prometheus-api-client
+PyP100
+grafana-client
