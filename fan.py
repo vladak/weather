@@ -224,9 +224,6 @@ def loop(config, p110):
         logger.debug(f"device info: {p110.getDeviceInfo()}")
         device_on = p110.getDeviceInfo()["result"]["device_on"]
         logger.debug(f"device_on = {device_on}")
-        # TODO: publish as MQTT message
-        # TODO: energy usage returns error
-        logger.debug(f"energy usage: {p110.getEnergyUsage()}")
 
         # Turn off when outside operating hours.
         start_hour = config.start_hour
