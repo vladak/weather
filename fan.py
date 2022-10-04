@@ -106,7 +106,9 @@ class FanConfig:
         self.sensor_a = config["global"]["sensor_a"]
         self.sensor_b = config["global"]["sensor_b"]
         self.sleep_seconds = int(config["global"]["sleep_seconds"])
+        # Set to negative value if need to run from midnight.
         self.start_hour = int(config["global"]["start_hour"])
+        # Set to 24 if need to run till midnight.
         self.end_hour = int(config["global"]["end_hour"])
         self.temp_diff = int(config["global"]["temp_diff"])
 
@@ -229,7 +231,6 @@ def loop(config, p110):
         start_hour = config.start_hour
         end_hour = config.end_hour
         now = datetime.now()
-        # TODO: midnight = 24 ?
         if now.hour < start_hour or now.hour >= end_hour:
             logger.info("Request received outside of open time window, ignoring")
             if device_on:
