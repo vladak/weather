@@ -103,7 +103,7 @@ def sensor_loop(
 
         if scd4x_sensor:
             relative_humidity = acquire_scd4x(
-                gauges[CO2], gauges[HUMIDITY], scd4x_sensor
+                gauges[CO2], gauges[HUMIDITY], scd4x_sensor, temp_inside_name
             )
 
         if veml7700_sensor:
@@ -306,12 +306,13 @@ def acquire_pressure(bmp_sensor, gauge_pressure, altitude, outside_temp):
             gauge_pressure.labels(name="sea").set(pressure_val)
 
 
-def acquire_scd4x(gauge_co2, gauge_humidity, scd4x_sensor):
+def acquire_scd4x(gauge_co2, gauge_humidity, scd4x_sensor, location_name):
     """
     Reads CO2 and humidity from the SCD4x sensor.
     :param gauge_co2: Gauge object
     :param gauge_humidity: Gauge object
     :param scd4x_sensor:
+    :param location_name: name of the location. Used for tagging.
     :return: relative humidity
     """
 
@@ -325,7 +326,7 @@ def acquire_scd4x(gauge_co2, gauge_humidity, scd4x_sensor):
     humidity = scd4x_sensor.relative_humidity
     if humidity:
         logger.debug(f"humidity={humidity:.1f}%")
-        gauge_humidity.set(humidity)
+        gauge_humidity.labels(location=location_name).set(humidity)
 
     return humidity
 
@@ -523,7 +524,7 @@ def main():
 
     gauges = {
         PRESSURE: Gauge("pressure_hpa", "Barometric pressure in hPa", ["name"]),
-        HUMIDITY: Gauge("humidity_pct", "Humidity inside in percent"),
+        HUMIDITY: Gauge("humidity_pct", "Relative humidity in percent", ["location"]),
         CO2: Gauge("co2_ppm", "CO2 in ppm"),
         PM25: Gauge("pm25", "Particles in air", ["measurement"]),
         LUX: Gauge("lux", "Light in Lux units"),
