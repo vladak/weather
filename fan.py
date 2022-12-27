@@ -240,7 +240,6 @@ def loop(config, p110):
             time.sleep(sleep_seconds)
             continue
 
-        # TODO: add hysteresis: something like if the last state was off and the last X values are below Y% of the threshold (or base value), keep the off
         logger.info(f"Temperature difference: {temp_diff}")
         if temp_diff > config.temp_diff:
             if not device_on:
