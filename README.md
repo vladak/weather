@@ -159,8 +159,8 @@ e.g. when the CO2 metric rises above given level (time to open a window).
 - setup sound card in Alsa config:
 ```
   sudo sed -i /usr/share/alsa/alsa.conf \
-      -e 's/^defaults.ctl.card 0/defaults.ctl.card 1/' \
-      -e 's/^defaults.pcm.card 0/defaults.pcm.card 1/'
+      -e 's/^defaults.ctl.card 0/defaults.ctl.card 2/' \
+      -e 's/^defaults.pcm.card 0/defaults.pcm.card 2/'
 ```
 - copy some MP3 files (with `.mp3` suffix) to `/srv/weather/`
 - create configuration in `musicalert.ini` like so:
