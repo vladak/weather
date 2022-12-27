@@ -156,7 +156,17 @@ e.g. when the CO2 metric rises above given level (time to open a window).
 ```
   sudo apt-get install -y mpg123
 ```
-- setup sound card in Alsa config:
+- get the list of Alsa devices:
+```
+   aplay -l
+```
+  - the USB speaker should show up as:
+```
+card 2: UACDemoV10 [UACDemoV1.0], device 0: USB Audio [USB Audio]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+```
+- setup sound card in Alsa config (using the device index from `aplay -l`):
 ```
   sudo sed -i /usr/share/alsa/alsa.conf \
       -e 's/^defaults.ctl.card 0/defaults.ctl.card 2/' \
