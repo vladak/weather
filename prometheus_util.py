@@ -3,10 +3,8 @@ Utility functions to work with Prometheus API.
 """
 
 import logging
-from prometheus_api_client import (
-    MetricsList,
-    PrometheusApiClientException,
-)
+
+from prometheus_api_client import MetricsList, PrometheusApiClientException
 
 
 def extract_metric_from_data(data):
