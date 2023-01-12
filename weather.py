@@ -321,7 +321,7 @@ def acquire_scd4x(gauge_co2, gauge_humidity, scd4x_sensor, location_name):
     co2_ppm = scd4x_sensor.CO2
     if co2_ppm:
         logger.debug(f"CO2 ppm={co2_ppm}")
-        gauge_co2.set(co2_ppm)
+        gauge_co2.labels(location=location_name).set(co2_ppm)
 
     humidity = scd4x_sensor.relative_humidity
     if humidity:
@@ -525,7 +525,7 @@ def main():
     gauges = {
         PRESSURE: Gauge("pressure_hpa", "Barometric pressure in hPa", ["name"]),
         HUMIDITY: Gauge("humidity_pct", "Relative humidity in percent", ["location"]),
-        CO2: Gauge("co2_ppm", "CO2 in ppm"),
+        CO2: Gauge("co2_ppm", "CO2 in ppm", ["location"]),
         PM25: Gauge("pm25", "Particles in air", ["measurement"]),
         LUX: Gauge("lux", "Light in Lux units"),
         TVOC: Gauge("tvoc", "Total Volatile Organic Compounds"),
