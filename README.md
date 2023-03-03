@@ -152,6 +152,11 @@ The goal is to play a sound when Grafana produces an alert that matches certain 
 e.g. when the CO2 metric rises above given level (time to open a window).
 
 - connect the [USB speaker](https://www.adafruit.com/product/3369)
+- create `/etc/modprobe.d/alsa.conf` with the following content to make sure the USB audio card does not change Alsa slots on reboot:
+```
+options snd slots=snd-bcm2835,vc4,vc4,snd-usb-audio
+```
+- reboot
 - install pre-requisites:
 ```
   sudo apt-get install -y mpg123
@@ -162,15 +167,15 @@ e.g. when the CO2 metric rises above given level (time to open a window).
 ```
   - the USB speaker should show up as:
 ```
-card 2: UACDemoV10 [UACDemoV1.0], device 0: USB Audio [USB Audio]
+card 3: UACDemoV10 [UACDemoV1.0], device 0: USB Audio [USB Audio]
   Subdevices: 1/1
   Subdevice #0: subdevice #0
 ```
 - setup sound card in Alsa config (using the device index from `aplay -l`):
 ```
   sudo sed -i /usr/share/alsa/alsa.conf \
-      -e 's/^defaults.ctl.card 0/defaults.ctl.card 2/' \
-      -e 's/^defaults.pcm.card 0/defaults.pcm.card 2/'
+      -e 's/^defaults.ctl.card 0/defaults.ctl.card 3/' \
+      -e 's/^defaults.pcm.card 0/defaults.pcm.card 3/'
 ```
 - copy some MP3 files (with `.mp3` suffix) to `/srv/weather/`
 - create configuration in `musicalert.ini` like so:
