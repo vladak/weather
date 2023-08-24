@@ -30,6 +30,14 @@ These metrics are collected:
 
 The I2C sensors are connected to the [Raspberry Pi](https://www.raspberrypi.org/) via the [SparkFun Qwiic / STEMMA QT HAT](https://www.adafruit.com/product/4688) that offers 4 [Stemma Qt](https://learn.adafruit.com/introducing-adafruit-stemma-qt/what-is-stemma-qt) ports.
 
+## Physical packaging
+
+<img src="img/top-disassembled.jpg" alt="drawing" width="400"/>
+<img src="img/side-disassembled.jpg" alt="drawing" width="400"/>
+<img src="img/rear-assembled.jpg" alt="drawing" width="400"/>
+<img src="img/front-assembled.jpg" alt="drawing" width="400"/>
+<img src="img/front-assembled-direct.jpg" alt="drawing" width="400"/>
+
 ## Setup
 
 ### I2C
