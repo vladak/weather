@@ -32,6 +32,16 @@ The I2C sensors are connected to the [Raspberry Pi](https://www.raspberrypi.org/
 
 ## Physical packaging
 
+For a long time I had the sensors dangling from the Raspberri Pi on the side of a bookshelf (which arguably placed the sensors in good environment for taking measurements),
+some of them placed into modded plastic SD card enclosure or even the plastic egg found in Kinder surprise. I knew there ought to be a way how to neatly stack them,
+playing around with ideas like using LEGO or maybe custom 3D printed enclosure until I found the congenial [Aluminum Mounting Grid](https://www.adafruit.com/product/5779).
+
+Currently there are 2 floors. Each of the sensors is attached so that the metal parts do not touch the mounting grid (using the small plastic nut and screws found in the [kit](https://www.adafruit.com/product/3299)).
+
+The mounting grids are attached to the Pi enclosure with a coated metal wire.
+
+I will yet see how this fares w.r.t. thermal regulation impacting the measurements. All the temperature sensors are not on the metal grids so that's okay.
+
 <img src="img/top-disassembled.jpg" alt="drawing" width="400"/>
 <img src="img/side-disassembled.jpg" alt="drawing" width="400"/>
 <img src="img/rear-assembled.jpg" alt="drawing" width="400"/>
