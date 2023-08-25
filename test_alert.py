@@ -225,7 +225,7 @@ def test_config_load():
     [mp3match]
     "{TMP_FILE}" = ["Foo", "[a-z]Bar.*"]
     """
-    with tempfile.NamedTemporaryFile(prefix="Foo", suffix=".mp3") as tmp:
+    with tempfile.NamedTemporaryFile(prefix="Foo ", suffix=".mp3") as tmp:
         config = config.format(TMP_FILE=tmp.name)
         config = tomli.loads(config)
         mp3match = load_mp3_config(config, "test")

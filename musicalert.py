@@ -7,7 +7,6 @@ matches a condition.
 """
 
 import argparse
-import configparser
 import json
 import logging
 import os
@@ -21,6 +20,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pprint import pformat
 from shutil import which
 from subprocess import TimeoutExpired
+
+import tomli
 
 from logutil import LogLevelAction, get_log_level
 
@@ -338,7 +339,7 @@ def load_mp3_config(config, config_file):
         logger.debug(f"Checking file '{file}'")
 
         if not file.endswith(mp3suffix):
-            raise ConfigException(f"File {file} does not end with {mp3suffix}")
+            raise ConfigException(f"File '{file}' does not end with {mp3suffix}")
 
         try:
             with open(file, "r", encoding="utf-8"):
@@ -356,7 +357,7 @@ def load_mp3_config(config, config_file):
 def load_hr_config(config):
     """
     Load start and end hour from configuration file or return defaults.
-    :param config:
+    :param config: dictionary representing loaded configuration file
     :return: tuple of start and end hour
     """
 
@@ -366,7 +367,7 @@ def load_hr_config(config):
     end_hr = 23
 
     section_name = "start_end"
-    if section_name in config.sections():
+    if section_name in config.keys():
         start_hr_config = config[section_name].get("start_hr")
         if start_hr_config:
             logger.debug(f"Using start hr from config: {start_hr_config}")
@@ -398,10 +399,9 @@ def main():
     # To support relative paths.
     os.chdir(os.path.dirname(__file__))
 
-    config = configparser.ConfigParser()
     try:
-        with open(args.config, "r", encoding="utf-8") as config_fp:
-            config.read_file(config_fp)
+        with open(args.config, "rb") as config_fp:
+            config = tomli.load(config_fp)
     except OSError as exc:
         logger.error(f"Could not load '{args.config}': {exc}")
         sys.exit(1)
