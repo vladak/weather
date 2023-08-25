@@ -202,11 +202,16 @@ card 3: UACDemoV10 [UACDemoV1.0], device 0: USB Audio [USB Audio]
 # allows to override the --loglevel command line option
 loglevel = debug
 
-[name2mp3]
-# The mapping from alert name to mp3 file to play.
+[mp3match]
+# Rules to match mp3 files to play. The key is the file name,
+# the value is either a string to exact match the alert name
+# or a list to exact match the alert name and regexp match the
+# 'valueString' value in the alert. This is handy to have different
+# files matching the same alert name but different payload. 
+#
 # All the files in this section have to readable.
-Foo foo = foo.mp3
-Bar bar = bar.mp3
+"foo.mp3" = "Foo foo"
+"Bar.mp3" = ["Bar bar", ".*Bar.*"] 
 
 # This section is optional, the defaults are 8 and 23.
 # The mp3 file will not be played outside of this range.

@@ -10,3 +10,4 @@ black
 prometheus-api-client
 PyP100
 grafana-client
+tomli

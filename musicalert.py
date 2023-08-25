@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import queue
+import re
 import subprocess
 import sys
 import threading
@@ -99,7 +100,7 @@ class GrafanaAlertHandler(BaseHTTPRequestHandler):
         try:
             handle_grafana_payload(
                 payload,
-                self.server.name2file,
+                self.server.mp3match,
                 self.server.play_queue,
             )
         except GrafanaPayloadException as e:
@@ -143,7 +144,7 @@ class GrafanaPayloadException(Exception):
     """
 
 
-def handle_grafana_payload(payload, name2file, play_queue):
+def handle_grafana_payload(payload, mp3match, play_queue):
     """
     Alerting payload handling. Expects Grafana alert payload (JSON).
     :return True if at least one file was enqueued for playing, False otherwise.
@@ -165,13 +166,13 @@ def handle_grafana_payload(payload, name2file, play_queue):
 
     queued = False
     for alert in alerts:
-        if handle_grafana_alert(alert, name2file, play_queue):
+        if handle_grafana_alert(alert, mp3match, play_queue):
             queued = True
 
     return queued
 
 
-def handle_grafana_alert(alert, name2file, play_queue):
+def handle_grafana_alert(alert, mp3match, play_queue):
     """
     Handle single Grafana alert.
     :return True if the file was enqueued for playing, False otherwise.
@@ -191,19 +192,36 @@ def handle_grafana_alert(alert, name2file, play_queue):
     if alert_name is None:
         raise GrafanaPayloadException(f"No 'alert_name' in alert: {alert}")
 
-    # Python's configparser stores the keys in lower case so
-    # the ruleName needs to be matched as lower case.
-    file_to_play = name2file.get(alert_name.lower())
-    if not file_to_play:
-        logger.info(
-            f"'alertname' value '{alert_name}' in the alert "
-            f"not found in the mappings: {dict(name2file.items())}"
-        )
-        return False
+    # It should be possible to speed this up by constructing maps of alert name
+    # to file and to value (if any), however for now this is good as not many entries
+    # are expected in the configuration.
+    for file, params in mp3match.items():
+        if isinstance(params, list):
+            logger.debug(f"Will match {params} on alert name and value")
+            alert_name_match = params[0]
+            value_match = params[1]
+        else:
+            logger.debug(f"Will match {params} on alert name")
+            alert_name_match = params
+            value_match = None
 
-    logger.debug(f"Will play '{file_to_play}' based on alert: {alert}")
-    play_queue.put(file_to_play)
-    return True
+        if alert_name_match == alert_name:
+            if value_match is None:
+                logger.debug(f"Will play '{file}' based on alert: {alert}")
+                play_queue.put(file)
+                return True
+
+            alert_value = alert.get("valueString")
+            if alert_value and re.match(value_match, alert_value):
+                logger.debug(f"Will play '{file}' based on alert: {alert}")
+                play_queue.put(file)
+                return True
+
+    logger.info(
+        f"'alertname' value '{alert_name}' in the alert "
+        f"not found in the mappings: {dict(mp3match.items())}"
+    )
+    return False
 
 
 class GrafanaAlertHttpServer(HTTPServer):
@@ -215,27 +233,27 @@ class GrafanaAlertHttpServer(HTTPServer):
     def __init__(
         self,
         server_address,
-        name2file,
+        mp3match,
         range_hr,
         play_queue,
         handler_class=GrafanaAlertHandler,
     ):
         super().__init__(server_address, handler_class)
-        self.name2file = name2file
+        self.mp3match = mp3match
         start_hr, end_hr = range_hr
         self.start_hr = start_hr
         self.end_hr = end_hr
         self.play_queue = play_queue
 
 
-def run_server(port, name2file, range_hr, play_queue):
+def run_server(port, mp3match, range_hr, play_queue):
     """
     Start HTTP server, will not return unless interrupted.
     """
     logger = logging.getLogger(__name__)
 
     server_address = ("localhost", port)
-    httpd = GrafanaAlertHttpServer(server_address, name2file, range_hr, play_queue)
+    httpd = GrafanaAlertHttpServer(server_address, mp3match, range_hr, play_queue)
     logger.info(f"Starting HTTP server on port {port}...")
 
     try:
@@ -301,13 +319,13 @@ class ConfigException(Exception):
 def load_mp3_config(config, config_file):
     """
     Load .ini configuration file. Will exit the program on error.
-    :return: dictionary with alert name to mp3 file mappings
+    :return: dictionary with mp3 file mappings
     """
 
     logger = logging.getLogger(__name__)
 
-    mp3config_section_name = "name2mp3"
-    if mp3config_section_name not in config.sections():
+    mp3config_section_name = "mp3match"
+    if mp3config_section_name not in config.keys():
         raise ConfigException(
             f"Config file {config_file} does not include "
             f"the {mp3config_section_name} section"
@@ -316,7 +334,7 @@ def load_mp3_config(config, config_file):
     # Check that all mp3 files in the configuration are readable.
     # Of course, this is TOCTOU. play_mp3() will recheck.
     mp3suffix = ".mp3"
-    for _, file in config[mp3config_section_name].items():
+    for file, _ in config[mp3config_section_name].items():
         logger.debug(f"Checking file '{file}'")
 
         if not file.endswith(mp3suffix):
@@ -396,7 +414,7 @@ def main():
             logger.setLevel(config_log_level)
 
     try:
-        name2file = load_mp3_config(config, args.config)
+        mp3match = load_mp3_config(config, args.config)
     except ConfigException as exc:
         logger.error(f"Failed to process config file: {exc}")
         sys.exit(1)
@@ -410,7 +428,7 @@ def main():
         target=play_mp3, args=(play_queue, args.timeout, args.mpg123), daemon=True
     ).start()
 
-    run_server(server_port, name2file, (start_hr, end_hr), play_queue)
+    run_server(server_port, mp3match, (start_hr, end_hr), play_queue)
 
 
 if __name__ == "__main__":

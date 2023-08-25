@@ -4,14 +4,17 @@ Test musicalert.py
 import datetime
 import json
 import queue
+import tempfile
 from unittest.mock import Mock
 
 import pytest
+import tomli
 
 from musicalert import (
     GrafanaAlertHandler,
     GrafanaPayloadException,
     handle_grafana_payload,
+    load_mp3_config,
 )
 
 
@@ -25,7 +28,7 @@ def test_payload_no_alert_name_match():
         "status": "firing",
     }
     assert not handle_grafana_payload(
-        payload, {alert_name + "bar": "foo.mp3"}, queue.Queue()
+        payload, {"foo.mp3": alert_name + "bar"}, queue.Queue()
     )
 
 
@@ -38,7 +41,7 @@ def test_payload_no_state_match():
         "alerts": [{"labels": {"alertname": alert_name}, "status": "resolved"}],
         "status": "firing",
     }
-    assert not handle_grafana_payload(payload, {alert_name: "foo.mp3"}, queue.Queue())
+    assert not handle_grafana_payload(payload, {"foo.mp3": alert_name}, queue.Queue())
 
 
 def test_payload_lower_case():
@@ -50,12 +53,12 @@ def test_payload_lower_case():
         "alerts": [{"labels": {"alertname": alert_name.upper()}, "status": "firing"}],
         "status": "firing",
     }
-    assert handle_grafana_payload(payload, {alert_name: "foo.mp3"}, queue.Queue())
+    assert not handle_grafana_payload(payload, {"foo.mp3": alert_name}, queue.Queue())
 
 
-def test_payload_will_play():
+def test_payload_will_play_alert_name():
     """
-    Simple test for file successfully enqueued.
+    Simple test for file successfully enqueued based on alert name.
     """
     alert_name = "foo"
     payload = {
@@ -64,8 +67,75 @@ def test_payload_will_play():
     }
     play_queue = queue.Queue()
     file_mp3 = "foo.mp3"
-    assert handle_grafana_payload(payload, {alert_name: file_mp3}, play_queue)
+    assert handle_grafana_payload(payload, {file_mp3: alert_name}, play_queue)
     assert play_queue.get() == file_mp3
+
+
+def test_payload_will_play_value():
+    """
+    Simple test for file successfully enqueued based on both alert name and payload value.
+    """
+    alert_name = "foo"
+    payload = {
+        "alerts": [
+            {
+                "labels": {"alertname": alert_name},
+                "status": "firing",
+                "valueString": "bar",
+            }
+        ],
+        "status": "firing",
+    }
+    play_queue = queue.Queue()
+    file_mp3 = "foo.mp3"
+    assert handle_grafana_payload(payload, {file_mp3: [alert_name, "bar"]}, play_queue)
+    assert play_queue.get() == file_mp3
+
+
+def test_payload_will_play_value_regexp():
+    """
+    Simple test for file successfully enqueued based on both alert name and payload value.
+    """
+    alert_name = "foo"
+    payload = {
+        "alerts": [
+            {
+                "labels": {"alertname": alert_name},
+                "status": "firing",
+                "valueString": "one bar two",
+            }
+        ],
+        "status": "firing",
+    }
+    play_queue = queue.Queue()
+    file_mp3 = "foo.mp3"
+    assert handle_grafana_payload(
+        payload, {file_mp3: [alert_name, ".*bar.*"]}, play_queue
+    )
+    assert play_queue.get() == file_mp3
+
+
+def test_payload_will_play_value_negative():
+    """
+    Simple test for file successfully enqueued based on both alert name and payload value.
+    """
+    alert_name = "foo"
+    payload = {
+        "alerts": [
+            {
+                "labels": {"alertname": alert_name},
+                "status": "firing",
+                "valueString": "huh",
+            }
+        ],
+        "status": "firing",
+    }
+    play_queue = queue.Queue()
+    file_mp3 = "foo.mp3"
+    assert not handle_grafana_payload(
+        payload, {file_mp3: [alert_name, "bar"]}, play_queue
+    )
+    assert play_queue.empty()
 
 
 def test_payload_with_exception():
@@ -74,7 +144,7 @@ def test_payload_with_exception():
     """
     payload = {"foo": "bar"}
     with pytest.raises(GrafanaPayloadException):
-        handle_grafana_payload(payload, {"alert_name": "foo.mp3"}, queue.Queue())
+        handle_grafana_payload(payload, {"foo.mp3": "alert_name"}, queue.Queue())
 
 
 def test_grafana_payload():
@@ -86,7 +156,7 @@ def test_grafana_payload():
         data = file_obj.read()
         payload = json.loads(data)
 
-    handle_grafana_payload(payload, {"alert_name": "foo.mp3"}, queue.Queue())
+    handle_grafana_payload(payload, {"foo.mp3": "alert_name"}, queue.Queue())
 
 
 def test_time_check():
@@ -142,3 +212,21 @@ def test_time_check():
     # negative test 2
     now = datetime.datetime(year=2023, month=8, day=25, hour=8, minute=44)
     assert handler.do_not_disturb(now)
+
+
+def test_config_load():
+    """
+    Test that config file loads successfully with expected content.
+    """
+    config = """
+    [global]
+    loglevel = "debug"
+    
+    [mp3match]
+    "{TMP_FILE}" = ["Foo", "[a-z]Bar.*"]
+    """
+    with tempfile.NamedTemporaryFile(prefix="Foo", suffix=".mp3") as tmp:
+        config = config.format(TMP_FILE=tmp.name)
+        config = tomli.loads(config)
+        mp3match = load_mp3_config(config, "test")
+        assert len(dict(mp3match.items())) > 0
