@@ -221,7 +221,7 @@ def test_config_load():
     config = """
     [global]
     loglevel = "debug"
-    
+
     [mp3match]
     "{TMP_FILE}" = ["Foo", "[a-z]Bar.*"]
     """
