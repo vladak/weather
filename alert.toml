@@ -1,0 +1,5 @@
+[global]
+loglevel = "debug"
+
+[mp3match]
+"FooBar.mp3" = ["Foo", "[a-z]Bar.*"]

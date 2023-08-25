@@ -73,7 +73,10 @@ class GrafanaAlertHandler(BaseHTTPRequestHandler):
 
         now = datetime.now()
         if not self.do_not_disturb(now):
-            logger.info("Request received outside of open time window, ignoring")
+            logger.info(
+                f"Request received outside of open time window "
+                f"({self.server.start_hr}, {self.server.end_hr}), ignoring"
+            )
             self._set_response(200)
             return
 
