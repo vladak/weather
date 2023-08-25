@@ -305,7 +305,7 @@ def parse_args():
         help="Configuration file with mapping from 'alertname' key value "
         "in the Grafana alert payload (exact match) to mp3 file."
         "These should be in the 'name2mp3' section.",
-        default="alert.ini",
+        default="alert.toml",
     )
 
     return parser.parse_args()
@@ -319,7 +319,7 @@ class ConfigException(Exception):
 
 def load_mp3_config(config, config_file):
     """
-    Load .ini configuration file. Will exit the program on error.
+    Load configuration file. Will exit the program on error.
     :return: dictionary with mp3 file mappings
     """
 
