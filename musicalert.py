@@ -15,7 +15,7 @@ import queue
 import subprocess
 import sys
 import threading
-from datetime import datetime
+from datetime import date, datetime, time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pprint import pformat
 from shutil import which
@@ -38,6 +38,23 @@ class GrafanaAlertHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/plain")
         self.end_headers()
 
+    def do_not_disturb(self, now):
+        """
+        :param now: datetime instance of current time
+        :return: whether alerting should be performed, w.r.t. time allowed
+        """
+        logger = logging.getLogger(__name__)
+
+        date_today = date(now.year, now.month, now.day)
+        start_time = datetime.combine(date_today, time(hour=self.server.start_hr))
+        end_time = datetime.combine(date_today, time(hour=self.server.end_hr))
+
+        if now < start_time or now > end_time:
+            logger.debug("do not disturb is in effect")
+            return True
+
+        return False
+
     # pylint: disable=invalid-name
     def do_POST(self):
         """
@@ -53,7 +70,7 @@ class GrafanaAlertHandler(BaseHTTPRequestHandler):
             return
 
         now = datetime.now()
-        if now.hour < self.server.start_hr or now.hour > self.server.end_hr:
+        if not self.do_not_disturb(now):
             logger.info("Request received outside of open time window, ignoring")
             self._set_response(200)
             return

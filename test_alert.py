@@ -1,13 +1,18 @@
 """
 Test musicalert.py
 """
-
+import datetime
 import json
 import queue
+from unittest.mock import Mock
 
 import pytest
 
-from musicalert import GrafanaPayloadException, handle_grafana_payload
+from musicalert import (
+    GrafanaAlertHandler,
+    GrafanaPayloadException,
+    handle_grafana_payload,
+)
 
 
 def test_payload_no_alert_name_match():
@@ -82,3 +87,58 @@ def test_grafana_payload():
         payload = json.loads(data)
 
     handle_grafana_payload(payload, {"alert_name": "foo.mp3"}, queue.Queue())
+
+
+def test_time_check():
+    """
+    Test the "do not disturb" mechanism of GrafanaAlertHandler.
+    """
+
+    class TestableGrafanaAlertHandler(GrafanaAlertHandler):
+        """
+        Normally on init GrafanaAlertHandler calls self.setup() that requires
+        some operations on the request that the Mock object cannot provide,
+        like len() on sub-mock objects. So, short-circuit them here.
+        """
+
+        def handle(self):
+            pass
+
+        def finish(self) -> None:
+            pass
+
+    mock_server = Mock()
+    # Use non-defaults.
+    mock_server.start_hr = 9
+    mock_server.end_hr = 22
+    response_stub = '{"foo": "bar"}'
+    status_code = 200
+    mock_request = Mock(
+        **{
+            "json.return_value": json.loads(response_stub),
+            "text.return_value": response_stub,
+            "status_code": status_code,
+            "ok": status_code == 200,
+        }
+    )
+    handler = TestableGrafanaAlertHandler(
+        client_address=tuple("127.0.0.1, 8888"),
+        server=mock_server,
+        request=mock_request,
+    )
+
+    # positive test 1
+    now = datetime.datetime(year=2023, month=8, day=25, hour=16, minute=44)
+    assert not handler.do_not_disturb(now)
+
+    # positive test 2
+    now = datetime.datetime(year=2023, month=8, day=25, hour=9, minute=1)
+    assert not handler.do_not_disturb(now)
+
+    # negative test 1
+    now = datetime.datetime(year=2023, month=8, day=25, hour=22, minute=5)
+    assert handler.do_not_disturb(now)
+
+    # negative test 2
+    now = datetime.datetime(year=2023, month=8, day=25, hour=8, minute=44)
+    assert handler.do_not_disturb(now)
