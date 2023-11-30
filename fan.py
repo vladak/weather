@@ -9,6 +9,7 @@ This assumes certain environment in the room and hence is not universally applic
 """
 
 import argparse
+import asyncio
 import configparser
 import logging
 import os
@@ -18,7 +19,7 @@ from datetime import datetime
 
 from grafana_client.api import GrafanaApi
 from prometheus_api_client import PrometheusConnect
-from PyP100 import PyP110
+from tapo import ApiClient
 
 from logutil import LogLevelAction, get_log_level
 from prometheus_util import extract_metric_from_data
@@ -113,7 +114,7 @@ class FanConfig:
         self.temp_diff = int(config["global"]["temp_diff"])
 
 
-def main():
+async def main():
     """
     Main loop. Acquire temperature difference from Prometheus,
     set the socket on/off based on the value.
@@ -143,16 +144,15 @@ def main():
             logger.setLevel(config_log_level)
 
     logger.info("Connecting to the plug")
-    p110 = PyP110.P110(config.hostname, config.username, config.password)
-    p110.handshake()
-    p110.login()
+    client = ApiClient(config.username, config.password)
+    p110 = await client.p110(config.hostname)
     logger.info("Connected to the plug")
 
     try:
-        loop(config, p110)
+        await loop(config, p110)
     except KeyboardInterrupt:
         logger.info("Interrupted, turning the fan off")
-        turn_off(p110, config)
+        await turn_off(p110, config)
 
 
 def add_grafana_annotation(config, text):
@@ -183,7 +183,7 @@ def add_grafana_annotation(config, text):
         logger.error(f"Could not find dashboard with name '{dashboard_name}'")
 
 
-def turn_on(p110, config):
+async def turn_on(p110, config):
     """
     :param p110: PyP100 instance
     :param config: configuration instance
@@ -191,11 +191,11 @@ def turn_on(p110, config):
     logger = logging.getLogger(__name__)
 
     logger.info("Turning on")
-    p110.turnOn()
+    await p110.on()
     add_grafana_annotation(config, "on")
 
 
-def turn_off(p110, config):
+async def turn_off(p110, config):
     """
     :param p110: PyP100 instance
     :param config: configuration instance
@@ -203,11 +203,11 @@ def turn_off(p110, config):
     logger = logging.getLogger(__name__)
 
     logger.info("Turning off")
-    p110.turnOff()
+    await p110.off()
     add_grafana_annotation(config, "off")
 
 
-def loop(config, p110):
+async def loop(config, p110):
     """
     :param config: instance of FanConfig
     :param p110: P110 instance to control the socket
@@ -223,8 +223,10 @@ def loop(config, p110):
         )
         logger.debug(f"Temperature difference {temp_diff}")
 
-        logger.debug(f"device info: {p110.getDeviceInfo()}")
-        device_on = p110.getDeviceInfo()["result"]["device_on"]
+        device_info_obj = await p110.get_device_info()
+        device_info = device_info_obj.to_dict()
+        logger.debug(f"device info: {device_info}")
+        device_on = device_info["device_on"]
         logger.debug(f"device_on = {device_on}")
 
         # Turn off when outside operating hours.
@@ -243,16 +245,19 @@ def loop(config, p110):
         logger.info(f"Temperature difference: {temp_diff}")
         if temp_diff > config.temp_diff:
             if not device_on:
-                turn_on(p110, config)
+                await turn_on(p110, config)
             else:
                 logger.info("Already on")
         else:
             if device_on:
-                turn_off(p110, config)
+                await turn_off(p110, config)
 
         logger.info(f"Sleeping for {sleep_seconds} seconds")
         time.sleep(sleep_seconds)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        sys.exit(0)
