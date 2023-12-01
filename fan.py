@@ -19,6 +19,7 @@ from datetime import datetime
 
 from grafana_client.api import GrafanaApi
 from prometheus_api_client import PrometheusConnect
+# pylint: disable=no-name-in-module
 from tapo import ApiClient
 
 from logutil import LogLevelAction, get_log_level
