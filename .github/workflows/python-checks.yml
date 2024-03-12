@@ -13,10 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v4
         with:
           # This is what Raspbian is using.
           python-version: "3.9"
