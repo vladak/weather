@@ -1,6 +1,7 @@
 """
 Test musicalert.py
 """
+
 import datetime
 import json
 import queue
