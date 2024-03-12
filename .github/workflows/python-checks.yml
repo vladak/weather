@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-python@v3
         with:
           # This is what Raspbian is using.
-          python-version: "3.7"
+          python-version: "3.9"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
