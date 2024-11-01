@@ -238,7 +238,7 @@ async def loop(config, p110):
         if now.hour < start_hour or now.hour >= end_hour:
             logger.info("Request received outside of open time window, ignoring")
             if device_on:
-                turn_off(p110, config)
+                await turn_off(p110, config)
 
             logger.info(f"Sleeping for {sleep_seconds} seconds")
             time.sleep(sleep_seconds)
