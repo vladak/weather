@@ -107,7 +107,7 @@ def sensor_loop(
             )
 
         if veml7700_sensor:
-            acquire_light(gauges[LUX], veml7700_sensor)
+            acquire_light(gauges[LUX], veml7700_sensor, temp_inside_name)
 
         # Acquire outside temperature before pressure so that pressure at sea level
         # can be computed as soon as possible.
@@ -331,11 +331,12 @@ def acquire_scd4x(gauge_co2, gauge_humidity, scd4x_sensor, location_name):
     return humidity
 
 
-def acquire_light(gauge_lux, light_sensor):
+def acquire_light(gauge_lux, light_sensor, location_name):
     """
     Reads light amount in the form of Lux
     :param gauge_lux Gauge object
     :param light_sensor light sensor object
+    :param location_name: name of the location. Used for tagging.
     :return:
     """
 
@@ -344,7 +345,7 @@ def acquire_light(gauge_lux, light_sensor):
     lux = light_sensor.light
     if lux:
         logger.debug(f"lux={lux}")
-        gauge_lux.set(lux)
+        gauge_lux.labels(location=location_name).set(lux)
 
 
 def parse_args():
@@ -527,7 +528,7 @@ def main():
         HUMIDITY: Gauge("humidity_pct", "Relative humidity in percent", ["location"]),
         CO2: Gauge("co2_ppm", "CO2 in ppm", ["location"]),
         PM25: Gauge("pm25", "Particles in air", ["measurement"]),
-        LUX: Gauge("lux", "Light in Lux units"),
+        LUX: Gauge("lux", "Light in Lux units", ["location"]),
         TVOC: Gauge("tvoc", "Total Volatile Organic Compounds"),
         TEMPERATURE: Gauge(
             "temperature", "temperature in degrees of Celsius", ["sensor"]
