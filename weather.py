@@ -88,7 +88,7 @@ def sensor_loop(
             sgp30_sensor.set_iaq_baseline(co2_baseline, tvoc_baseline)
         except OSError as exception:
             logger.error(f"failed to get baselines for the TVOC sensor: {exception}")
-    except RuntimeError as exception:
+    except (OSError, RuntimeError) as exception:
         logger.error(f"cannot instantiate TVOC sensor: {exception}")
         sgp30_sensor = None
 
