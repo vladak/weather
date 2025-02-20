@@ -85,8 +85,8 @@ def sensor_loop(
     try:
         veml7700_sensor = adafruit_veml7700.VEML7700(i2c)
         logger.info("VEML7700 sensor connected")
-    except RuntimeError as exc:
-        logger.error(f"cannot instantiate Lux sensor: {exc}")
+    except RuntimeError as exception:
+        logger.error(f"cannot instantiate VEML7700 sensor: {exception}")
         veml7700_sensor = None
 
     try:
