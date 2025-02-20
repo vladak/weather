@@ -110,7 +110,7 @@ D5F2CF020000 = kuchyne
 
 [global]
 # Use name of the sensors from the 'temp_sensors' section.
-outside_temp_name = terasa
+outside_temp_name = terasa/shield
 inside_temp_name = kuchyne
 # altitude (in meters) for computing atmospheric pressure at sea level
 altitude = 245
