@@ -11,3 +11,4 @@ prometheus-api-client
 tapo
 grafana-client
 tomli
+adafruit-circuitpython-ens160

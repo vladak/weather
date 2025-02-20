@@ -12,6 +12,7 @@ import threading
 import time
 
 import adafruit_bmp280
+import adafruit_ens160
 import adafruit_scd4x
 import adafruit_sgp30
 import adafruit_veml7700
@@ -47,7 +48,7 @@ def sea_level_pressure(pressure, outside_temp, altitude):
     return pressure / pow(1.0 - 0.0065 * int(altitude) / temp_comp, 5.255)
 
 
-# pylint: disable=too-many-arguments,too-many-locals
+# pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements,too-many-positional-arguments
 def sensor_loop(
     sleep_timeout,
     owfsdir,
@@ -70,6 +71,7 @@ def sensor_loop(
     scd4x_sensor = None
     try:
         scd4x_sensor = adafruit_scd4x.SCD4X(i2c)
+        logger.info("SCD4x sensor connected")
     except ValueError as exception:
         logger.error(f"cannot find SCD4x sensor: {exception}")
 
@@ -77,20 +79,35 @@ def sensor_loop(
 
     try:
         veml7700_sensor = adafruit_veml7700.VEML7700(i2c)
+        logger.info("VEML7700 sensor connected")
     except RuntimeError as exc:
         logger.error(f"cannot instantiate Lux sensor: {exc}")
         veml7700_sensor = None
 
     try:
-        sgp30_sensor = adafruit_sgp30.Adafruit_SGP30(i2c)
+        ens160_sensor = adafruit_ens160.ENS160(i2c)
+        logger.info(
+            f"ENS160 sensor present (firmware {ens160_sensor.firmware_version})"
+        )
+    except RuntimeError as exception:
+        logger.error(f"cannot instantiate ENS160 sensor: {exception}")
+        ens160_sensor = None
+
+    # Try to fall back to SGP30 if ENS160 is not present or cannot be instantiated.
+    sgp30_sensor = None
+    if ens160_sensor is None:
         try:
-            tvoc_baseline, co2_baseline = read_baselines(BASELINE_FILE)
-            sgp30_sensor.set_iaq_baseline(co2_baseline, tvoc_baseline)
-        except OSError as exception:
-            logger.error(f"failed to get baselines for the SGP30 sensor: {exception}")
-    except (OSError, RuntimeError) as exception:
-        logger.error(f"cannot instantiate SGP30 sensor: {exception}")
-        sgp30_sensor = None
+            sgp30_sensor = adafruit_sgp30.Adafruit_SGP30(i2c)
+            try:
+                tvoc_baseline, co2_baseline = read_baselines(BASELINE_FILE)
+                sgp30_sensor.set_iaq_baseline(co2_baseline, tvoc_baseline)
+            except OSError as exception:
+                logger.error(
+                    f"failed to get baselines for the SGP30 sensor: {exception}"
+                )
+        except (OSError, RuntimeError) as exception:
+            logger.error(f"cannot instantiate SGP30 sensor: {exception}")
+            sgp30_sensor = None
 
     if scd4x_sensor:
         logger.info("Waiting for the first measurement from the SCD-40 sensor")
@@ -141,7 +158,13 @@ def sensor_loop(
             acquire_pm25(gauges[PM25], pm25_sensor)
 
         if sgp30_sensor:
-            acquire_tvoc(gauges[TVOC], sgp30_sensor, relative_humidity, inside_temp)
+            acquire_tvoc_sgp30(
+                gauges[TVOC], sgp30_sensor, relative_humidity, inside_temp
+            )
+        if ens160_sensor:
+            acquire_tvoc_ens160(
+                gauges[TVOC], ens160_sensor, relative_humidity, inside_temp
+            )
 
         time.sleep(sleep_timeout)
 
@@ -186,10 +209,10 @@ def read_baselines(file):
     return tvoc_baseline, co2_baseline
 
 
-def acquire_tvoc(gauge, sgp30_sensor, relative_humidity, temp_celsius):
+def acquire_tvoc_sgp30(gauge, sgp30_sensor, relative_humidity, temp_celsius):
     """
     :param gauge: Gauge object
-    :param sgp30_sensor: sensor instance
+    :param sgp30_sensor: SGP30 sensor instance
     :param relative_humidity: relative humidity (for calibration)
     :param temp_celsius: temperature (for calibration)
     :return: TVOC
@@ -199,7 +222,7 @@ def acquire_tvoc(gauge, sgp30_sensor, relative_humidity, temp_celsius):
 
     if relative_humidity and temp_celsius:
         logger.debug(
-            f"Calibrating the TVOC sensor with temperature={temp_celsius} "
+            f"Calibrating the SGP30 sensor with temperature={temp_celsius} "
             f"and relative_humidity={relative_humidity}"
         )
         sgp30_sensor.set_iaq_relative_humidity(
@@ -208,7 +231,7 @@ def acquire_tvoc(gauge, sgp30_sensor, relative_humidity, temp_celsius):
 
     tvoc = sgp30_sensor.TVOC
     if tvoc and tvoc != 0:  # the initial reading is 0
-        logger.debug(f"Got TVOC reading: {tvoc}")
+        logger.debug(f"Got TVOC reading from SGP30: {tvoc}")
         gauge.set(tvoc)
 
     try:
@@ -222,6 +245,36 @@ def acquire_tvoc(gauge, sgp30_sensor, relative_humidity, temp_celsius):
             write_baselines(sgp30_sensor, BASELINE_FILE)
     except OSError as exception:
         logger.error(f"failed to write TVOC baselines to {BASELINE_FILE}: {exception}")
+
+    return tvoc
+
+
+def acquire_tvoc_ens160(gauge, ens160_sensor, relative_humidity, temp_celsius):
+    """
+    :param gauge: Gauge object
+    :param ens160_sensor: ENS160 sensor instance
+    :param relative_humidity: relative humidity (for calibration)
+    :param temp_celsius: temperature (for calibration)
+    :return: TVOC reading or None
+    """
+
+    logger = logging.getLogger(__name__)
+
+    if temp_celsius:
+        logger.debug(f"Calibrating the ENS160 sensor with temperature={temp_celsius}")
+        ens160_sensor.temperature_compensation = temp_celsius
+
+    if relative_humidity:
+        logger.debug(
+            f"Calibrating the ESP160 sensor with relative_humidity={relative_humidity}"
+        )
+        ens160_sensor.humidity_compensation = relative_humidity
+
+    tvoc = None
+    if ens160_sensor.ens.data_validity == adafruit_ens160.NORMAL_OP:
+        tvoc = ens160_sensor.TVOC
+        logger.debug(f"Got TVOC reading from ENS160: {tvoc}")
+        gauge.set(tvoc)
 
     return tvoc
 
