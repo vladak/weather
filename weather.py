@@ -95,7 +95,7 @@ def sensor_loop(
         logger.info(
             f"ENS160 sensor present (firmware {ens160_sensor.firmware_version})"
         )
-    except RuntimeError as exception:
+    except (ValueError, RuntimeError) as exception:
         logger.error(f"cannot instantiate ENS160 sensor: {exception}")
         ens160_sensor = None
 
