@@ -233,7 +233,7 @@ class GrafanaAlertHttpServer(HTTPServer):
     Wrapper class to store parameters used by GrafanaAlertHandler.
     """
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         server_address,
