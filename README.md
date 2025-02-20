@@ -19,14 +19,14 @@ Also, the metrics should be available for displaying on external display ala [eI
 
 These metrics are collected:
 
-| *Metric* | *Sensor* | *Sensor connection* | *Metric access* |
-| ------------- |:-------------:| :-------------: | :-------------: |
+| *Metric* |                                  *Sensor*                                   | *Sensor connection* | *Metric access* |
+| ------------- |:---------------------------------------------------------------------------:| :-------------: | :-------------: |
 | [temperature](https://en.wikipedia.org/wiki/Temperature) | [DS18B20](https://www.maximintegrated.com/en/products/sensors/DS18B20.html) | [1-Wire](https://en.wikipedia.org/wiki/1-Wire) (via [DS9490R](https://www.maximintegrated.com/en/products/interface/universal-serial-bus/DS9490.html)) | [OWFS](https://www.owfs.org/) |
-| [barometric pressure](https://en.wikipedia.org/wiki/Atmospheric_pressure) | [BMP280](https://www.adafruit.com/product/2651) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) | [Python libraries](https://github.com/adafruit/Adafruit_CircuitPython_BMP280) |
-| [CO2](https://en.wikipedia.org/wiki/Carbon_dioxide) and [humidity](https://en.wikipedia.org/wiki/Humidity) | [SCD-40](https://www.adafruit.com/product/5187) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) | [Python libraries](https://github.com/adafruit/Adafruit_CircuitPython_SCD4x) |
-| [air particles](https://en.wikipedia.org/wiki/Particulates) | [PMSA003I](https://www.adafruit.com/product/4632) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) | [Python libraries]( https://github.com/adafruit/Adafruit_CircuitPython_PM25) |
-| light in [Lux](https://en.wikipedia.org/wiki/Lux) | [Adafruit VEML7700](https://www.adafruit.com/product/4162) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) | [Python libraries](https://github.com/adafruit/Adafruit_CircuitPython_VEML7700) |
-| [TVOC](https://en.wikipedia.org/wiki/Volatile_organic_compound#Indoor_VOCs) | [Adafruit SGP30](https://www.adafruit.com/product/3709) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) | [Python libraries](https://github.com/adafruit/Adafruit_CircuitPython_SGP30) |
+| [barometric pressure](https://en.wikipedia.org/wiki/Atmospheric_pressure) |          [Adafruit BMP280](https://www.adafruit.com/product/2651)           | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) | [Python libraries](https://github.com/adafruit/Adafruit_CircuitPython_BMP280) |
+| [CO2](https://en.wikipedia.org/wiki/Carbon_dioxide) and [humidity](https://en.wikipedia.org/wiki/Humidity) |          [Adafruit SCD-40](https://www.adafruit.com/product/5187)           | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) | [Python libraries](https://github.com/adafruit/Adafruit_CircuitPython_SCD4x) |
+| [air particles](https://en.wikipedia.org/wiki/Particulates) |         [Adafruit PMSA003I](https://www.adafruit.com/product/4632)          | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) | [Python libraries]( https://github.com/adafruit/Adafruit_CircuitPython_PM25) |
+| light in [Lux](https://en.wikipedia.org/wiki/Lux) |         [Adafruit VEML7700](https://www.adafruit.com/product/4162)          | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) | [Python libraries](https://github.com/adafruit/Adafruit_CircuitPython_VEML7700) |
+| [TVOC](https://en.wikipedia.org/wiki/Volatile_organic_compound#Indoor_VOCs) |          [Adafruit ENS160](https://www.adafruit.com/product/5606)           | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) | [Python libraries](https://github.com/adafruit/Adafruit_CircuitPython_SGP30) |
 
 The I2C sensors are connected to the [Raspberry Pi](https://www.raspberrypi.org/) via the [SparkFun Qwiic / STEMMA QT HAT](https://www.adafruit.com/product/4688) that offers 4 [Stemma Qt](https://learn.adafruit.com/introducing-adafruit-stemma-qt/what-is-stemma-qt) ports.
 
@@ -246,4 +246,5 @@ end_hr = 20
 - USB card with Raspberry Pi: https://learn.adafruit.com/usb-audio-cards-with-a-raspberry-pi/updating-alsa-config
 - [BMP280](https://www.adafruit.com/product/2651) guide: https://learn.adafruit.com/adafruit-bmp280-barometric-pressure-plus-temperature-sensor-breakout/circuitpython-test
 - VEML7700 guide: https://learn.adafruit.com/adafruit-veml7700
+- ENS160 guide: https://learn.adafruit.com/adafruit-ens160-mox-gas-sensor/circuitpython-python
 - SGP30 guide: https://learn.adafruit.com/adafruit-sgp30-gas-tvoc-eco2-mox-sensor/circuitpython-wiring-test
