@@ -271,7 +271,7 @@ def acquire_tvoc_ens160(gauge, ens160_sensor, relative_humidity, temp_celsius):
         ens160_sensor.humidity_compensation = relative_humidity
 
     tvoc = None
-    if ens160_sensor.ens.data_validity == adafruit_ens160.NORMAL_OP:
+    if ens160_sensor.data_validity == adafruit_ens160.NORMAL_OP:
         tvoc = ens160_sensor.TVOC
         logger.debug(f"Got TVOC reading from ENS160: {tvoc}")
         gauge.set(tvoc)
