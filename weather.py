@@ -69,6 +69,7 @@ def sensor_loop(
 
     try:
         bmp_sensor = adafruit_bmp280.Adafruit_BMP280_I2C(i2c)
+        logger.info("BMP280 sensor connected")
     except RuntimeError as exception:
         logger.error(f"cannot instantiate BMP280 sensor: {exception}")
         bmp_sensor = None
