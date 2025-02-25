@@ -248,3 +248,7 @@ end_hr = 20
 - VEML7700 guide: https://learn.adafruit.com/adafruit-veml7700
 - ENS160 guide: https://learn.adafruit.com/adafruit-ens160-mox-gas-sensor/circuitpython-python
 - SGP30 guide: https://learn.adafruit.com/adafruit-sgp30-gas-tvoc-eco2-mox-sensor/circuitpython-wiring-test
+
+## Lessons learned
+
+- with branch new ENS160 sensor it is necessary to wait for cca one hour before it is ready to use: https://forums.adafruit.com/viewtopic.php?p=1047569#p1047569
