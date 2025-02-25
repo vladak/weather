@@ -251,4 +251,4 @@ end_hr = 20
 
 ## Lessons learned
 
-- with branch new ENS160 sensor it is necessary to wait for cca one hour before it is ready to use: https://forums.adafruit.com/viewtopic.php?p=1047569#p1047569
+- with brand new ENS160 sensor (powered for the first time) it is necessary to wait for cca one hour before it is ready to use: https://forums.adafruit.com/viewtopic.php?p=1047569#p1047569
