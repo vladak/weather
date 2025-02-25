@@ -5,6 +5,7 @@ Utility functions to work with Prometheus API.
 import logging
 
 from prometheus_api_client import MetricsList, PrometheusApiClientException
+from requests.exceptions import RequestException
 
 
 def extract_metric_from_data(data):
@@ -38,7 +39,12 @@ def acquire_prometheus_temperature(prometheus_connect, sensor_name):
         logger.debug(f"Got Prometheus reply for sensor '{sensor_name}': {temp_data}")
         temp = extract_metric_from_data(temp_data)
         temp_value = float(temp)
-    except (PrometheusApiClientException, IndexError) as req_exc:
+    except (
+        PrometheusApiClientException,
+        IndexError,
+        ConnectionError,
+        RequestException,
+    ) as req_exc:
         logger.error(
             f"cannot get data for temperature sensor '{sensor_name}' from Prometheus: {req_exc}"
         )
