@@ -9,7 +9,7 @@ WorkingDirectory=/srv/weather
 ExecStart=/srv/weather/env/bin/python3 /srv/weather/fan.py
 ExecStop=/bin/kill -2 $MAINPID
 TimeoutStartSec=0
-Restart=always
+Restart=on-abnormal
 RestartSec=3
 
 [Install]
