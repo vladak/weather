@@ -140,6 +140,12 @@ curl http://localhost:8111
   sudo systemctl enable prometheus
   sudo systemctl start prometheus
 ```
+- create configuration:
+```
+cat << EOF | sudo tee -a /etc/default/prometheus
+ARGS="--storage.tsdb.retention.size=200GB --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/home/pi/prometheus-data"
+EOF
+```
 - add the weather app to `/etc/prometheus/prometheus.yml`:
 ```yml
 scrape_configs:
