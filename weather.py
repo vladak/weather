@@ -147,7 +147,9 @@ def sensor_loop(
             if co2_ppm:
                 gauges[CO2].labels(location=temp_inside_name).set(co2_ppm)
             if relative_humidity:
-                gauges[HUMIDITY].labels(location=temp_inside_name).set(relative_humidity)
+                gauges[HUMIDITY].labels(location=temp_inside_name).set(
+                    relative_humidity
+                )
 
         if veml7700_sensor:
             acquire_light(gauges[LUX], veml7700_sensor, temp_inside_name)
@@ -667,9 +669,7 @@ def main():
         socket_pool=socket,
         ssl_context=ssl.create_default_context(),
     )
-    logger.info(
-        f"Connecting to MQTT broker {mqtt_hostname} on port {mqtt_port}"
-    )
+    logger.info(f"Connecting to MQTT broker {mqtt_hostname} on port {mqtt_port}")
     mqtt.connect()
 
     logger.info(f"Starting HTTP server on port {args.port}")
