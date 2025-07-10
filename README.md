@@ -79,6 +79,15 @@ kernel updates and after reboot the sensors were available under the `/run/owfs`
 directory.
 
 
+## MQTT broker
+
+The weather service (to be installed) publishes some data to MQTT broker. Install one locally.
+
+```
+sudo apt install mosquitto
+sudo systemctl enable mosquitto
+```
+
 ## Install the weather service
 
 This is a simple Python program that collects the metrics and presents them via 
