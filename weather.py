@@ -1,22 +1,28 @@
 #!/usr/bin/env python3
 """
 Acquire readings from various sensors and present them via HTTP in Prometheus format.
+Some of them are published also to MQTT.
 """
 
 import argparse
 import configparser
+import json
 import logging
 import os
+import socket
+import ssl
 import sys
 import threading
 import time
 
 import adafruit_bmp280
 import adafruit_ens160
+import adafruit_minimqtt.adafruit_minimqtt as MQTT
 import adafruit_scd4x
 import adafruit_sgp30
 import adafruit_veml7700
 import board
+from adafruit_minimqtt.adafruit_minimqtt import MMQTTException
 from adafruit_pm25.i2c import PM25_I2C
 from prometheus_api_client import PrometheusConnect
 from prometheus_client import Gauge, start_http_server
@@ -58,6 +64,8 @@ def sensor_loop(
     temp_inside_name,
     gauges,
     prometheus_url,
+    mqtt,
+    mqtt_topic,
 ):
     """
     main loop in which sensor values are collected and set into Prometheus
@@ -119,15 +127,27 @@ def sensor_loop(
         logger.info("Waiting for the first measurement from the SCD-40 sensor")
         scd4x_sensor.start_periodic_measurement()
 
+    logger.info(f"Connecting to Prometheus on {prometheus_url}")
     prometheus_connect = PrometheusConnect(url=prometheus_url)
 
     while True:
         relative_humidity = None
+        co2_ppm = None
+        pressure = None
+
+        # Make sure to stay connected to the broker e.g. in case of keep alive.
+        try:
+            mqtt.loop(1)
+        except MMQTTException as mqtt_exc:
+            logger.warning(f"Got MQTT exception: {mqtt_exc}")
+            mqtt.reconnect()
 
         if scd4x_sensor:
-            relative_humidity = acquire_scd4x(
-                gauges[CO2], gauges[HUMIDITY], scd4x_sensor, temp_inside_name
-            )
+            relative_humidity, co2_ppm = acquire_scd4x(scd4x_sensor)
+            if co2_ppm:
+                gauges[CO2].labels(location=temp_inside_name).set(co2_ppm)
+            if relative_humidity:
+                gauges[HUMIDITY].labels(location=temp_inside_name).set(relative_humidity)
 
         if veml7700_sensor:
             acquire_light(gauges[LUX], veml7700_sensor, temp_inside_name)
@@ -153,12 +173,15 @@ def sensor_loop(
                 )
                 temp = inside_temp
 
-            acquire_pressure(
+            pressure = acquire_pressure(
                 bmp_sensor,
-                gauges[PRESSURE],
                 altitude,
                 temp,
             )
+            if pressure:
+                gauges[PRESSURE].labels(name="base").set(pressure)
+                if temp:
+                    gauges[PRESSURE].labels(name="sea").set(pressure)
 
         if pm25_sensor:
             acquire_pm25(gauges[PM25], pm25_sensor)
@@ -171,6 +194,19 @@ def sensor_loop(
             acquire_tvoc_ens160(
                 gauges[TVOC], ens160_sensor, relative_humidity, inside_temp
             )
+
+        mqtt_payload_dict = {}
+        if co2_ppm:
+            mqtt_payload_dict["co2_ppm"] = co2_ppm
+        if pressure:
+            mqtt_payload_dict["pressure"] = pressure
+        if mqtt_payload_dict:
+            logger.debug(f"publishing to MQTT: {mqtt_payload_dict}")
+            try:
+                mqtt.publish(mqtt_topic, json.dumps(mqtt_payload_dict))
+            except MMQTTException as mqtt_exc:
+                logger.warning(f"Got MQTT exception: {mqtt_exc}")
+                mqtt.reconnect()
 
         time.sleep(sleep_timeout)
 
@@ -344,14 +380,13 @@ def acquire_owfs_temperature(gauge, owfsdir, temp_sensors, temp_name):
     return temp_value
 
 
-def acquire_pressure(bmp_sensor, gauge_pressure, altitude, outside_temp):
+def acquire_pressure(bmp_sensor, altitude, outside_temp):
     """
     Read data from the pressure sensor and calculate pressure at sea level.
     :param bmp_sensor:
-    :param gauge_pressure: Gauge object
     :param altitude: altitude in meters
     :param outside_temp: outside temperature in degrees of Celsius
-    :return:
+    :return: pressure value
     """
 
     logger = logging.getLogger(__name__)
@@ -359,21 +394,18 @@ def acquire_pressure(bmp_sensor, gauge_pressure, altitude, outside_temp):
     pressure_val = bmp_sensor.pressure
     if pressure_val and pressure_val > 0:
         logger.debug(f"pressure={pressure_val}")
-        gauge_pressure.labels(name="base").set(pressure_val)
         if outside_temp:
             pressure_val = sea_level_pressure(pressure_val, outside_temp, altitude)
             logger.debug(f"pressure at sea level={pressure_val}")
-            gauge_pressure.labels(name="sea").set(pressure_val)
+
+    return pressure_val
 
 
-def acquire_scd4x(gauge_co2, gauge_humidity, scd4x_sensor, location_name):
+def acquire_scd4x(scd4x_sensor):
     """
     Reads CO2 and humidity from the SCD4x sensor.
-    :param gauge_co2: Gauge object
-    :param gauge_humidity: Gauge object
     :param scd4x_sensor:
-    :param location_name: name of the location. Used for tagging.
-    :return: relative humidity
+    :return: tuple of relative humidity and CO2 PPM value
     """
 
     logger = logging.getLogger(__name__)
@@ -381,14 +413,12 @@ def acquire_scd4x(gauge_co2, gauge_humidity, scd4x_sensor, location_name):
     co2_ppm = scd4x_sensor.CO2
     if co2_ppm:
         logger.debug(f"CO2 ppm={co2_ppm}")
-        gauge_co2.labels(location=location_name).set(co2_ppm)
 
     humidity = scd4x_sensor.relative_humidity
     if humidity:
         logger.debug(f"humidity={humidity:.1f}%")
-        gauge_humidity.labels(location=location_name).set(humidity)
 
-    return humidity
+    return humidity, co2_ppm
 
 
 def acquire_light(gauge_lux, light_sensor, location_name):
@@ -482,7 +512,8 @@ def config_load(config, config_file):
     :param config: configparser instance
     :param config_file: configuration file (for logging)
     :return: (dictionary of 1-wire ID to name, name of outside temperature sensor,
-    name of the inside temperature sensor, altitude, Prometheus URL)
+    name of the inside temperature sensor, altitude, Prometheus URL, MQTT broker
+    hostname, MQTT topic)
     """
 
     logger = logging.getLogger(__name__)
@@ -513,6 +544,24 @@ def config_load(config, config_file):
 
     logger.debug(f"Prometheus URL: {prometheus_url}")
 
+    mqtt_broker_name = "mqtt_hostname"
+    mqtt_broker = config[global_section_name].get(mqtt_broker_name)
+    if not mqtt_broker:
+        raise ConfigException(
+            f"Section {global_section_name} does not contain {mqtt_broker_name}"
+        )
+
+    logger.debug(f"MQTT broker hostname: {mqtt_broker}")
+
+    mqtt_topic_name = "mqtt_topic"
+    mqtt_topic = config[global_section_name].get(mqtt_topic_name)
+    if not mqtt_topic:
+        raise ConfigException(
+            f"Section {global_section_name} does not contain {mqtt_topic_name}"
+        )
+
+    logger.debug(f"MQTT topic: {mqtt_topic}")
+
     outside_temp_name = "outside_temp_name"
     outside_temp = config[global_section_name].get(outside_temp_name)
     if not outside_temp:
@@ -539,7 +588,15 @@ def config_load(config, config_file):
 
     altitude = conf_get_altitude(config, global_section_name)
 
-    return temp_sensors, outside_temp, inside_temp, altitude, prometheus_url
+    return (
+        temp_sensors,
+        outside_temp,
+        inside_temp,
+        altitude,
+        prometheus_url,
+        mqtt_broker,
+        mqtt_topic,
+    )
 
 
 def main():
@@ -578,6 +635,8 @@ def main():
             temp_inside_name,
             altitude,
             prometheus_url,
+            mqtt_hostname,
+            mqtt_topic,
         ) = config_load(config, args.config)
     except ConfigException as exc:
         logger.error(f"Failed to process config file: {exc}")
@@ -601,6 +660,18 @@ def main():
         logger.error(f"Not a directory {args.owfsdir}")
         sys.exit(1)
 
+    mqtt_port = 1883
+    mqtt = MQTT.MQTT(
+        broker=mqtt_hostname,
+        port=mqtt_port,
+        socket_pool=socket,
+        ssl_context=ssl.create_default_context(),
+    )
+    logger.info(
+        f"Connecting to MQTT broker {mqtt_hostname} on port {mqtt_port}"
+    )
+    mqtt.connect()
+
     logger.info(f"Starting HTTP server on port {args.port}")
     start_http_server(args.port)
     thread = threading.Thread(
@@ -615,6 +686,8 @@ def main():
             temp_inside_name,
             gauges,
             prometheus_url,
+            mqtt,
+            mqtt_topic,
         ],
     )
     thread.start()

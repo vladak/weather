@@ -116,6 +116,8 @@ inside_temp_name = kuchyne
 altitude = 245
 # Overrids the --loglevel command line option
 # loglevel = debug
+mqtt_hostname = localhost
+mqtt_topic = devices/kuchyne/pi
 ```
 - add the `weather` service
 ```
