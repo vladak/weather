@@ -30,12 +30,12 @@ from prometheus_client import Gauge, start_http_server
 from logutil import LogLevelAction, get_log_level
 from prometheus_util import acquire_prometheus_temperature
 
-PRESSURE = "pressure"
-HUMIDITY = "humidity"
-LUX = "Lux"
-CO2 = "CO2"
-PM25 = "PM25"
-TVOC = "TVOC"
+PRESSURE = "pressure_hpa"
+HUMIDITY = "humidity_pct"
+LUX = "lux"
+CO2 = "co2_ppm"
+PM25 = "pm25"
+TVOC = "tvoc"
 TEMPERATURE = "temperature"
 
 BASELINE_FILE = "tvoc_baselines.dat"
@@ -131,9 +131,7 @@ def sensor_loop(
     prometheus_connect = PrometheusConnect(url=prometheus_url)
 
     while True:
-        relative_humidity = None
-        co2_ppm = None
-        pressure = None
+        mqtt_payload_dict = {}
 
         # Make sure to stay connected to the broker e.g. in case of keep alive.
         try:
@@ -146,15 +144,18 @@ def sensor_loop(
             relative_humidity, co2_ppm = acquire_scd4x(scd4x_sensor)
             if co2_ppm:
                 gauges[CO2].labels(location=temp_inside_name).set(co2_ppm)
+                mqtt_payload_dict[CO2] = co2_ppm
             if relative_humidity:
                 gauges[HUMIDITY].labels(location=temp_inside_name).set(
                     relative_humidity
                 )
+                mqtt_payload_dict[HUMIDITY] = relative_humidity
 
         if veml7700_sensor:
             lux = acquire_light(veml7700_sensor)
             if lux:
                 gauges[LUX].labels(location=temp_inside_name).set(lux)
+                mqtt_payload_dict[LUX] = lux
 
         #
         # Acquire outside temperature before pressure so that pressure at sea level
@@ -163,6 +164,7 @@ def sensor_loop(
         #
         inside_temp = acquire_owfs_temperature(owfsdir, temp_sensors, temp_inside_name)
         gauges[TEMPERATURE].labels(sensor=temp_inside_name).set(inside_temp)
+        mqtt_payload_dict[TEMPERATURE] = inside_temp
 
         outside_temp = acquire_prometheus_temperature(
             prometheus_connect, temp_outside_name
@@ -184,6 +186,7 @@ def sensor_loop(
                 temp,
             )
             if pressure:
+                mqtt_payload_dict[PRESSURE] = pressure
                 gauges[PRESSURE].labels(name="base").set(pressure)
                 if temp:
                     gauges[PRESSURE].labels(name="sea").set(pressure)
@@ -206,12 +209,9 @@ def sensor_loop(
             tvoc = acquire_tvoc_ens160(ens160_sensor, relative_humidity, inside_temp)
             if tvoc:
                 gauges[TVOC].set(tvoc)
+        if tvoc:
+            mqtt_payload_dict[TVOC] = tvoc
 
-        mqtt_payload_dict = {}
-        if co2_ppm:
-            mqtt_payload_dict["co2_ppm"] = co2_ppm
-        if pressure:
-            mqtt_payload_dict["pressure"] = pressure
         if mqtt_payload_dict:
             logger.debug(f"publishing to MQTT: {mqtt_payload_dict}")
             try:
@@ -645,14 +645,14 @@ def main():
         sys.exit(1)
 
     gauges = {
-        PRESSURE: Gauge("pressure_hpa", "Barometric pressure in hPa", ["name"]),
-        HUMIDITY: Gauge("humidity_pct", "Relative humidity in percent", ["location"]),
-        CO2: Gauge("co2_ppm", "CO2 in ppm", ["location"]),
-        PM25: Gauge("pm25", "Particles in air", ["measurement"]),
-        LUX: Gauge("lux", "Light in Lux units", ["location"]),
-        TVOC: Gauge("tvoc", "Total Volatile Organic Compounds"),
+        PRESSURE: Gauge(PRESSURE, "Barometric pressure in hPa", ["name"]),
+        HUMIDITY: Gauge(HUMIDITY, "Relative humidity in percent", ["location"]),
+        CO2: Gauge(CO2, "CO2 in ppm", ["location"]),
+        PM25: Gauge(PM25, "Particles in air", ["measurement"]),
+        LUX: Gauge(LUX, "Light in Lux units", ["location"]),
+        TVOC: Gauge(TVOC, "Total Volatile Organic Compounds"),
         TEMPERATURE: Gauge(
-            "temperature", "temperature in degrees of Celsius", ["sensor"]
+            TEMPERATURE, "temperature in degrees of Celsius", ["sensor"]
         ),
     }
 
