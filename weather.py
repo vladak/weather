@@ -152,14 +152,17 @@ def sensor_loop(
                 )
 
         if veml7700_sensor:
-            acquire_light(gauges[LUX], veml7700_sensor, temp_inside_name)
+            lux = acquire_light(veml7700_sensor)
+            if lux:
+                gauges[LUX].labels(location=temp_inside_name).set(lux)
 
+        #
         # Acquire outside temperature before pressure so that pressure at sea level
         # can be computed as soon as possible.
         # Similarly, the inside temperature is used for TVOC sensor calibration.
-        inside_temp = acquire_owfs_temperature(
-            gauges[TEMPERATURE], owfsdir, temp_sensors, temp_inside_name
-        )
+        #
+        inside_temp = acquire_owfs_temperature(owfsdir, temp_sensors, temp_inside_name)
+        gauges[TEMPERATURE].labels(sensor=temp_inside_name).set(inside_temp)
 
         outside_temp = acquire_prometheus_temperature(
             prometheus_connect, temp_outside_name
@@ -186,16 +189,23 @@ def sensor_loop(
                     gauges[PRESSURE].labels(name="sea").set(pressure)
 
         if pm25_sensor:
-            acquire_pm25(gauges[PM25], pm25_sensor)
+            data_items = acquire_pm25(pm25_sensor)
+            if data_items:
+                for name, value in data_items:
+                    label_name = name.replace(" ", "_")
+                    logger.debug(
+                        f"setting PM25 gauge with label={label_name} to {value}"
+                    )
+                    gauges[PM25].labels(measurement=label_name).set(value)
 
         if sgp30_sensor:
-            acquire_tvoc_sgp30(
-                gauges[TVOC], sgp30_sensor, relative_humidity, inside_temp
-            )
+            tvoc = acquire_tvoc_sgp30(sgp30_sensor, relative_humidity, inside_temp)
+            if tvoc:
+                gauges[TVOC].set(tvoc)
         if ens160_sensor:
-            acquire_tvoc_ens160(
-                gauges[TVOC], ens160_sensor, relative_humidity, inside_temp
-            )
+            tvoc = acquire_tvoc_ens160(ens160_sensor, relative_humidity, inside_temp)
+            if tvoc:
+                gauges[TVOC].set(tvoc)
 
         mqtt_payload_dict = {}
         if co2_ppm:
@@ -253,9 +263,8 @@ def read_baselines(file):
     return tvoc_baseline, co2_baseline
 
 
-def acquire_tvoc_sgp30(gauge, sgp30_sensor, relative_humidity, temp_celsius):
+def acquire_tvoc_sgp30(sgp30_sensor, relative_humidity, temp_celsius):
     """
-    :param gauge: Gauge object
     :param sgp30_sensor: SGP30 sensor instance
     :param relative_humidity: relative humidity (for calibration)
     :param temp_celsius: temperature (for calibration)
@@ -276,7 +285,6 @@ def acquire_tvoc_sgp30(gauge, sgp30_sensor, relative_humidity, temp_celsius):
     tvoc = sgp30_sensor.TVOC
     if tvoc and tvoc != 0:  # the initial reading is 0
         logger.debug(f"Got TVOC reading from SGP30: {tvoc}")
-        gauge.set(tvoc)
 
     try:
         if os.path.exists(BASELINE_FILE):
@@ -293,9 +301,8 @@ def acquire_tvoc_sgp30(gauge, sgp30_sensor, relative_humidity, temp_celsius):
     return tvoc
 
 
-def acquire_tvoc_ens160(gauge, ens160_sensor, relative_humidity, temp_celsius):
+def acquire_tvoc_ens160(ens160_sensor, relative_humidity, temp_celsius):
     """
-    :param gauge: Gauge object
     :param ens160_sensor: ENS160 sensor instance
     :param relative_humidity: relative humidity (for calibration)
     :param temp_celsius: temperature (for calibration)
@@ -319,17 +326,15 @@ def acquire_tvoc_ens160(gauge, ens160_sensor, relative_humidity, temp_celsius):
     if ens160_sensor.data_validity == adafruit_ens160.NORMAL_OP:
         tvoc = ens160_sensor.TVOC
         logger.debug(f"Got TVOC reading from ENS160: {tvoc}")
-        gauge.set(tvoc)
 
     return tvoc
 
 
-def acquire_pm25(gauge, pm25_sensor):
+def acquire_pm25(pm25_sensor):
     """
     Read PM25 data
-    :param gauge Gauge object
     :param pm25_sensor: PM25 sensor object
-    :return:
+    :return: data items or None
     """
 
     logger = logging.getLogger(__name__)
@@ -338,20 +343,16 @@ def acquire_pm25(gauge, pm25_sensor):
         acquired_data = pm25_sensor.read()
     except RuntimeError:
         logger.warning("Unable to read from PM25 sensor")
-        return
+        return None
 
     logger.debug(f"PM25 data={acquired_data}")
 
-    for name, value in acquired_data.items():
-        label_name = name.replace(" ", "_")
-        logger.debug(f"setting PM25 gauge with label={label_name} to {value}")
-        gauge.labels(measurement=label_name).set(value)
+    return acquired_data.items()
 
 
-def acquire_owfs_temperature(gauge, owfsdir, temp_sensors, temp_name):
+def acquire_owfs_temperature(owfsdir, temp_sensors, temp_name):
     """
     Read temperature single temperature value using OWFS.
-    :param gauge: Gauge object
     :param owfsdir: OWFS directory
     :param temp_sensors: dictionary of ID to name
     :param temp_name: name of the temperature sensor
@@ -373,7 +374,6 @@ def acquire_owfs_temperature(gauge, owfsdir, temp_sensors, temp_name):
 
         if temp:
             logger.debug(f"{sensor_name} temp={temp}")
-            gauge.labels(sensor=sensor_name).set(temp)
 
             if sensor_name == temp_name:
                 temp_value = float(temp)
@@ -423,13 +423,11 @@ def acquire_scd4x(scd4x_sensor):
     return humidity, co2_ppm
 
 
-def acquire_light(gauge_lux, light_sensor, location_name):
+def acquire_light(light_sensor):
     """
     Reads light amount in the form of Lux
-    :param gauge_lux Gauge object
     :param light_sensor light sensor object
-    :param location_name: name of the location. Used for tagging.
-    :return:
+    :return: lux value or None on error
     """
 
     logger = logging.getLogger(__name__)
@@ -437,7 +435,9 @@ def acquire_light(gauge_lux, light_sensor, location_name):
     lux = light_sensor.light
     if lux:
         logger.debug(f"lux={lux}")
-        gauge_lux.labels(location=location_name).set(lux)
+        return lux
+
+    return None
 
 
 def parse_args():
