@@ -143,7 +143,6 @@ def sensor_loop(
         if scd4x_sensor:
             relative_humidity, co2_ppm = acquire_scd4x(scd4x_sensor)
             if co2_ppm:
-                gauges[CO2].labels(location=temp_inside_name).set(co2_ppm)
                 mqtt_payload_dict[CO2] = co2_ppm
             if relative_humidity:
                 mqtt_payload_dict[HUMIDITY] = relative_humidity
@@ -645,7 +644,6 @@ def main():
     #
     gauges = {
         PRESSURE: Gauge(PRESSURE, "Barometric pressure in hPa", ["name"]),
-        CO2: Gauge(CO2, "CO2 in ppm", ["location"]),
         PM25: Gauge(PM25, "Particles in air", ["measurement"]),
         TVOC: Gauge(TVOC, "Total Volatile Organic Compounds"),
     }
