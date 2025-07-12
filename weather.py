@@ -195,14 +195,11 @@ def sensor_loop(
                     )
                     gauges[PM25].labels(measurement=label_name).set(value)
 
+        tvoc = None
         if sgp30_sensor:
             tvoc = acquire_tvoc_sgp30(sgp30_sensor, relative_humidity, inside_temp)
-            if tvoc:
-                gauges[TVOC].set(tvoc)
         if ens160_sensor:
             tvoc = acquire_tvoc_ens160(ens160_sensor, relative_humidity, inside_temp)
-            if tvoc:
-                gauges[TVOC].set(tvoc)
         if tvoc:
             mqtt_payload_dict[TVOC] = tvoc
 
