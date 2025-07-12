@@ -642,7 +642,6 @@ def main():
     gauges = {
         PRESSURE: Gauge(PRESSURE, "Barometric pressure in hPa", ["name"]),
         PM25: Gauge(PM25, "Particles in air", ["measurement"]),
-        TVOC: Gauge(TVOC, "Total Volatile Organic Compounds"),
     }
 
     logger.debug(f"Gauges: {gauges}")
