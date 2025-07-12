@@ -31,7 +31,7 @@ from logutil import LogLevelAction, get_log_level
 from prometheus_util import acquire_prometheus_temperature
 
 PRESSURE = "pressure_hpa"
-HUMIDITY = "humidity_pct"
+HUMIDITY = "humidity"
 LUX = "lux"
 CO2 = "co2_ppm"
 PM25 = "pm25"
@@ -146,15 +146,11 @@ def sensor_loop(
                 gauges[CO2].labels(location=temp_inside_name).set(co2_ppm)
                 mqtt_payload_dict[CO2] = co2_ppm
             if relative_humidity:
-                gauges[HUMIDITY].labels(location=temp_inside_name).set(
-                    relative_humidity
-                )
                 mqtt_payload_dict[HUMIDITY] = relative_humidity
 
         if veml7700_sensor:
             lux = acquire_light(veml7700_sensor)
             if lux:
-                gauges[LUX].labels(location=temp_inside_name).set(lux)
                 mqtt_payload_dict[LUX] = lux
 
         #
@@ -163,7 +159,6 @@ def sensor_loop(
         # Similarly, the inside temperature is used for TVOC sensor calibration.
         #
         inside_temp = acquire_owfs_temperature(owfsdir, temp_sensors, temp_inside_name)
-        gauges[TEMPERATURE].labels(sensor=temp_inside_name).set(inside_temp)
         mqtt_payload_dict[TEMPERATURE] = inside_temp
 
         outside_temp = acquire_prometheus_temperature(
@@ -644,16 +639,15 @@ def main():
         logger.error(f"Failed to process config file: {exc}")
         sys.exit(1)
 
+    #
+    # Only some metrics are set in Prometheus directly.
+    # The rest is published to MQTT.
+    #
     gauges = {
         PRESSURE: Gauge(PRESSURE, "Barometric pressure in hPa", ["name"]),
-        HUMIDITY: Gauge(HUMIDITY, "Relative humidity in percent", ["location"]),
         CO2: Gauge(CO2, "CO2 in ppm", ["location"]),
         PM25: Gauge(PM25, "Particles in air", ["measurement"]),
-        LUX: Gauge(LUX, "Light in Lux units", ["location"]),
         TVOC: Gauge(TVOC, "Total Volatile Organic Compounds"),
-        TEMPERATURE: Gauge(
-            TEMPERATURE, "temperature in degrees of Celsius", ["sensor"]
-        ),
     }
 
     logger.debug(f"Gauges: {gauges}")
