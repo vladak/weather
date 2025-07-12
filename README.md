@@ -222,6 +222,15 @@ metrics:
     help: illuminance in Lux
     # The prometheus type for this metric. Valid values are: "gauge" and "counter"
     type: gauge
+  -
+    # The name of the metric in prometheus
+    prom_name: tvoc
+    # The name of the metric in a MQTT JSON message
+    mqtt_name: tvoc
+    # The prometheus help text for this metric
+    help: TVOC
+    # The prometheus type for this metric. Valid values are: "gauge" and "counter"
+    type: gauge
 ```
 
 ## Prometheus
