@@ -244,7 +244,10 @@ metrics:
 - create configuration:
 ```
 cat << EOF | sudo tee -a /etc/default/prometheus
-ARGS="--storage.tsdb.retention.size=200GB --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/home/pi/prometheus-data"
+ARGS="--storage.tsdb.retention.size=200GB --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/home/pi/prometheus-data --web.listen-address=127.0.0.1:9090"
+EOF
+cat << EOF | sudo tee -a /etc/default/prometheus-node-exporter
+ARGS="--web.listen-address=127.0.0.1:9100"
 EOF
 ```
 - add the weather app to `/etc/prometheus/prometheus.yml`:
