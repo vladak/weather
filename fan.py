@@ -58,7 +58,7 @@ def get_temperature_difference(url, sensor_a, sensor_b):
     :param url: Prometheus URL
     :param sensor_a: name of the sensor that usually reports lower temperature
     :param sensor_b: name of the sensor that usually reports higher temperature
-    :return: float value
+    :return: float value or None or error
     """
 
     logger = logging.getLogger(__name__)
@@ -73,6 +73,8 @@ def get_temperature_difference(url, sensor_a, sensor_b):
         metric_name="temperature", label_config=sensor_b
     )
     logger.debug(f"temp_a = {temp_a} temp_b = {temp_b}")
+    if not temp_a or not temp_b:
+        return None
     diff = float(extract_metric_from_data(temp_b)) - float(
         extract_metric_from_data(temp_a)
     )
@@ -220,17 +222,6 @@ async def loop(config, p110):
     sleep_seconds = config.sleep_seconds
 
     while True:
-        temp_diff = get_temperature_difference(
-            config.prometheus_url, config.sensor_a, config.sensor_b
-        )
-        logger.debug(f"Temperature difference {temp_diff}")
-
-        device_info_obj = await p110.get_device_info()
-        device_info = device_info_obj.to_dict()
-        logger.debug(f"device info: {device_info}")
-        device_on = device_info["device_on"]
-        logger.debug(f"device_on = {device_on}")
-
         # Turn off when outside operating hours.
         start_hour = config.start_hour
         end_hour = config.end_hour
@@ -244,15 +235,27 @@ async def loop(config, p110):
             time.sleep(sleep_seconds)
             continue
 
-        logger.info(f"Temperature difference: {temp_diff}")
-        if temp_diff > config.temp_diff:
-            if not device_on:
-                await turn_on(p110, config)
+        temp_diff = get_temperature_difference(
+            config.prometheus_url, config.sensor_a, config.sensor_b
+        )
+        if temp_diff:
+            logger.debug(f"Temperature difference {temp_diff}")
+
+            device_info_obj = await p110.get_device_info()
+            device_info = device_info_obj.to_dict()
+            logger.debug(f"device info: {device_info}")
+            device_on = device_info["device_on"]
+            logger.debug(f"device_on = {device_on}")
+
+            logger.info(f"Temperature difference: {temp_diff}")
+            if temp_diff > config.temp_diff:
+                if not device_on:
+                    await turn_on(p110, config)
+                else:
+                    logger.info("Already on")
             else:
-                logger.info("Already on")
-        else:
-            if device_on:
-                await turn_off(p110, config)
+                if device_on:
+                    await turn_off(p110, config)
 
         logger.info(f"Sleeping for {sleep_seconds} seconds")
         time.sleep(sleep_seconds)
