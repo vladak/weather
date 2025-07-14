@@ -114,13 +114,13 @@ sudo apt-get install python3-dev
 - create `/srv/weather/weather.ini` configuration file:
 ```
 [temp_sensors]
-21F723030000 = terasa
-D5F2CF020000 = kuchyne
+D5F2CF020000 = devices/kuchyne/pocitace
+E2C0CF020000 = devices/kuchyne/knihovna
 
 [global]
 # Use name of the sensors from the 'temp_sensors' section.
 outside_temp_name = terasa/shield
-inside_temp_name = kuchyne
+inside_temp_name = devices/kuchyne/knihovna
 # altitude (in meters) for computing atmospheric pressure at sea level
 altitude = 245
 # Overrids the --loglevel command line option

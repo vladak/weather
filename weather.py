@@ -153,16 +153,34 @@ def sensor_loop(
                 mqtt_payload_dict[LUX] = lux
 
         #
+        # Acquire temperature metrics from OWFS and publish them to MQTT,
+        # eah to its own topic.
+        # The inside temperature is used for TVOC sensor calibration.
+        #
+        owfs_temp_dict = acquire_owfs_temperature(owfsdir, temp_sensors)
+        inside_temp = None
+        logger.debug(f"OWFS temperatures: {owfs_temp_dict}")
+        for topic_name, temp_value in owfs_temp_dict.items():
+            owfs_sensor_dict = {TEMPERATURE: temp_value}
+            logger.debug(f"publishing to {topic_name}: {owfs_sensor_dict}")
+            try:
+                mqtt.publish(topic_name, json.dumps(owfs_sensor_dict))
+            except MMQTTException as mqtt_exc:
+                logger.warning(f"Got MQTT exception: {mqtt_exc}")
+                mqtt.reconnect()
+
+            if topic_name == temp_inside_name:
+                inside_temp = temp_value
+                logger.debug(f"inside temperature = {inside_temp}")
+
+        #
         # Acquire outside temperature before pressure so that pressure at sea level
         # can be computed as soon as possible.
-        # Similarly, the inside temperature is used for TVOC sensor calibration.
         #
-        inside_temp = acquire_owfs_temperature(owfsdir, temp_sensors, temp_inside_name)
-        mqtt_payload_dict[TEMPERATURE] = inside_temp
-
         outside_temp = acquire_prometheus_temperature(
             prometheus_connect, temp_outside_name
         )
+        logger.debug(f"outside temperature = {outside_temp}")
 
         if bmp_sensor:
             # Fall back to inside temperature if outside temperature measurement is not available.
@@ -204,7 +222,7 @@ def sensor_loop(
             mqtt_payload_dict[TVOC] = tvoc
 
         if mqtt_payload_dict:
-            logger.debug(f"publishing to MQTT: {mqtt_payload_dict}")
+            logger.debug(f"publishing to {mqtt_topic}: {mqtt_payload_dict}")
             try:
                 mqtt.publish(mqtt_topic, json.dumps(mqtt_payload_dict))
             except MMQTTException as mqtt_exc:
@@ -341,19 +359,18 @@ def acquire_pm25(pm25_sensor):
     return acquired_data.items()
 
 
-def acquire_owfs_temperature(owfsdir, temp_sensors, temp_name):
+def acquire_owfs_temperature(owfsdir, temp_sensors):
     """
     Read temperature single temperature value using OWFS.
     :param owfsdir: OWFS directory
     :param temp_sensors: dictionary of ID to name
-    :param temp_name: name of the temperature sensor
-    :return: temperature as float value in degrees of Celsius
+    :return: dictionary of sensor name to temperature as float value in degrees of Celsius
     """
 
     logger = logging.getLogger(__name__)
 
-    temp_value = None
     logger.debug(f"temperature sensors: {dict(temp_sensors.items())}")
+    data = {}
     for sensor_id, sensor_name in temp_sensors.items():
         file_path = os.path.join(owfsdir, "28." + sensor_id, "temperature")
         try:
@@ -365,12 +382,9 @@ def acquire_owfs_temperature(owfsdir, temp_sensors, temp_name):
 
         if temp:
             logger.debug(f"{sensor_name} temp={temp}")
+            data[sensor_name] = float(temp)
 
-            if sensor_name == temp_name:
-                temp_value = float(temp)
-                break
-
-    return temp_value
+    return data
 
 
 def acquire_pressure(bmp_sensor, altitude, outside_temp):
