@@ -222,6 +222,12 @@ async def loop(config, p110):
     sleep_seconds = config.sleep_seconds
 
     while True:
+        device_info_obj = await p110.get_device_info()
+        device_info = device_info_obj.to_dict()
+        logger.debug(f"device info: {device_info}")
+        device_on = device_info["device_on"]
+        logger.debug(f"device_on = {device_on}")
+
         # Turn off when outside operating hours.
         start_hour = config.start_hour
         end_hour = config.end_hour
@@ -239,14 +245,6 @@ async def loop(config, p110):
             config.prometheus_url, config.sensor_a, config.sensor_b
         )
         if temp_diff:
-            logger.debug(f"Temperature difference {temp_diff}")
-
-            device_info_obj = await p110.get_device_info()
-            device_info = device_info_obj.to_dict()
-            logger.debug(f"device info: {device_info}")
-            device_on = device_info["device_on"]
-            logger.debug(f"device_on = {device_on}")
-
             logger.info(f"Temperature difference: {temp_diff}")
             if temp_diff > config.temp_diff:
                 if not device_on:
