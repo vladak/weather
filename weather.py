@@ -438,11 +438,8 @@ def acquire_light(light_sensor):
     logger = logging.getLogger(__name__)
 
     lux = light_sensor.light
-    if lux:
-        logger.debug(f"lux={lux}")
-        return lux
-
-    return None
+    logger.debug(f"lux={lux}")
+    return lux
 
 
 def parse_args():
