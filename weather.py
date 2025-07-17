@@ -149,7 +149,7 @@ def sensor_loop(
 
         if veml7700_sensor:
             lux = acquire_light(veml7700_sensor)
-            if lux:
+            if lux is not None:
                 mqtt_payload_dict[LUX] = lux
 
         #
