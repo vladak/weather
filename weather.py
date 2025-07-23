@@ -16,10 +16,8 @@ import threading
 import time
 
 import adafruit_bmp280
-import adafruit_ens160
 import adafruit_minimqtt.adafruit_minimqtt as MQTT
 import adafruit_scd4x
-import adafruit_sgp30
 import adafruit_veml7700
 import board
 from adafruit_minimqtt.adafruit_minimqtt import MMQTTException
@@ -29,6 +27,7 @@ from prometheus_client import Gauge, start_http_server
 
 from logutil import LogLevelAction, get_log_level
 from prometheus_util import acquire_prometheus_temperature
+from tvoc import TVOCSensor, TVOCException
 
 PRESSURE = "pressure_hpa"
 HUMIDITY = "humidity"
@@ -37,8 +36,6 @@ CO2 = "co2_ppm"
 PM25 = "pm25"
 TVOC = "tvoc"
 TEMPERATURE = "temperature"
-
-BASELINE_FILE = "tvoc_baselines.dat"
 
 
 def sea_level_pressure(pressure, outside_temp, altitude):
@@ -98,30 +95,11 @@ def sensor_loop(
         logger.error(f"cannot instantiate VEML7700 sensor: {exception}")
         veml7700_sensor = None
 
+    tvoc_sensor = None
     try:
-        ens160_sensor = adafruit_ens160.ENS160(i2c)
-        logger.info(
-            f"ENS160 sensor present (firmware {ens160_sensor.firmware_version})"
-        )
-    except (ValueError, RuntimeError) as exception:
-        logger.error(f"cannot instantiate ENS160 sensor: {exception}")
-        ens160_sensor = None
-
-    # Try to fall back to SGP30 if ENS160 is not present or cannot be instantiated.
-    sgp30_sensor = None
-    if ens160_sensor is None:
-        try:
-            sgp30_sensor = adafruit_sgp30.Adafruit_SGP30(i2c)
-            try:
-                tvoc_baseline, co2_baseline = read_baselines(BASELINE_FILE)
-                sgp30_sensor.set_iaq_baseline(co2_baseline, tvoc_baseline)
-            except OSError as exception:
-                logger.error(
-                    f"failed to get baselines for the SGP30 sensor: {exception}"
-                )
-        except (OSError, RuntimeError) as exception:
-            logger.error(f"cannot instantiate SGP30 sensor: {exception}")
-            sgp30_sensor = None
+        tvoc_sensor = TVOCSensor(i2c)
+    except TVOCException as exception:
+        logger.error(exception)
 
     if scd4x_sensor:
         logger.info("Waiting for the first measurement from the SCD-40 sensor")
@@ -213,13 +191,10 @@ def sensor_loop(
                     )
                     gauges[PM25].labels(measurement=label_name).set(value)
 
-        tvoc = None
-        if sgp30_sensor:
-            tvoc = acquire_tvoc_sgp30(sgp30_sensor, relative_humidity, inside_temp)
-        if ens160_sensor:
-            tvoc = acquire_tvoc_ens160(ens160_sensor, relative_humidity, inside_temp)
-        if tvoc:
-            mqtt_payload_dict[TVOC] = tvoc
+        if tvoc_sensor:
+            tvoc_val = tvoc_sensor.get_val(relative_humidity, inside_temp)
+            if tvoc_val is not None:
+                mqtt_payload_dict[TVOC] = tvoc_val
 
         if mqtt_payload_dict:
             logger.debug(f"publishing to {mqtt_topic}: {mqtt_payload_dict}")
@@ -230,113 +205,6 @@ def sensor_loop(
                 mqtt.reconnect()
 
         time.sleep(sleep_timeout)
-
-
-def write_baselines(sgp30_sensor, file):
-    """
-    :param sgp30_sensor: sensor instance
-    :param file: output file
-    """
-    logger = logging.getLogger(__name__)
-
-    tvoc_baseline = sgp30_sensor.baseline_TVOC
-    co2_baseline = sgp30_sensor.baseline_eCO2
-
-    if tvoc_baseline != 0 and co2_baseline != 0:
-        logger.debug(
-            f"writing baselines to {file}: TVOC={tvoc_baseline}, CO2={co2_baseline}"
-        )
-
-        with open(file, "wb") as file_obj:
-            file_obj.write(tvoc_baseline.to_bytes(2, byteorder="big", signed=False))
-            file_obj.write(co2_baseline.to_bytes(2, byteorder="big", signed=False))
-
-
-def read_baselines(file):
-    """
-    Read baseline values for the TVOC sensor. Setting the baseline values to the sensor
-    makes the measurements available earlier than 12 hours after the sensor was initialized.
-    The file is expected to contain 4 bytes - 2 bytes for each baseline value.
-    :param file: input file
-    :return: tuple of integers - TVOC and CO2 baseline
-    """
-    logger = logging.getLogger(__name__)
-
-    with open(file, "rb") as file_obj:
-        tvoc_bytes = file_obj.read(2)
-        tvoc_baseline = int.from_bytes(tvoc_bytes, byteorder="big")
-        co2_bytes = file_obj.read(2)
-        co2_baseline = int.from_bytes(co2_bytes, byteorder="big")
-        logger.debug(f"got baselines: TVOC={tvoc_baseline}, CO2={co2_baseline}")
-
-    return tvoc_baseline, co2_baseline
-
-
-def acquire_tvoc_sgp30(sgp30_sensor, relative_humidity, temp_celsius):
-    """
-    :param sgp30_sensor: SGP30 sensor instance
-    :param relative_humidity: relative humidity (for calibration)
-    :param temp_celsius: temperature (for calibration)
-    :return: TVOC
-    """
-
-    logger = logging.getLogger(__name__)
-
-    if relative_humidity and temp_celsius:
-        logger.debug(
-            f"Calibrating the SGP30 sensor with temperature={temp_celsius} "
-            f"and relative_humidity={relative_humidity}"
-        )
-        sgp30_sensor.set_iaq_relative_humidity(
-            celsius=temp_celsius, relative_humidity=relative_humidity
-        )
-
-    tvoc = sgp30_sensor.TVOC
-    if tvoc and tvoc != 0:  # the initial reading is 0
-        logger.debug(f"Got TVOC reading from SGP30: {tvoc}")
-
-    try:
-        if os.path.exists(BASELINE_FILE):
-            # Make the baseline values persistent every hour or so.
-            baseline_mtime = os.path.getmtime(BASELINE_FILE)
-            current_time = time.time()
-            if baseline_mtime < current_time - 3600:
-                write_baselines(sgp30_sensor, BASELINE_FILE)
-        else:
-            write_baselines(sgp30_sensor, BASELINE_FILE)
-    except OSError as exception:
-        logger.error(f"failed to write TVOC baselines to {BASELINE_FILE}: {exception}")
-
-    return tvoc
-
-
-def acquire_tvoc_ens160(ens160_sensor, relative_humidity, temp_celsius):
-    """
-    :param ens160_sensor: ENS160 sensor instance
-    :param relative_humidity: relative humidity (for calibration)
-    :param temp_celsius: temperature (for calibration)
-    :return: TVOC reading or None
-    """
-
-    logger = logging.getLogger(__name__)
-
-    if temp_celsius:
-        logger.debug(f"Calibrating the ENS160 sensor with temperature={temp_celsius}")
-        ens160_sensor.temperature_compensation = temp_celsius
-
-    if relative_humidity:
-        logger.debug(
-            f"Calibrating the ESP160 sensor with relative_humidity={relative_humidity}"
-        )
-        ens160_sensor.humidity_compensation = relative_humidity
-
-    tvoc = None
-    logger.debug(f"ENS160 data validity: {ens160_sensor.data_validity}")
-    if ens160_sensor.data_validity == adafruit_ens160.NORMAL_OP:
-        tvoc = ens160_sensor.TVOC
-        logger.debug(f"Got TVOC reading from ENS160: {tvoc}")
-
-    return tvoc
 
 
 def acquire_pm25(pm25_sensor):
