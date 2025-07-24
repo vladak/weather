@@ -15,7 +15,6 @@ import sys
 import threading
 import time
 
-import adafruit_bmp280
 import adafruit_minimqtt.adafruit_minimqtt as MQTT
 import adafruit_scd4x
 import board
@@ -26,6 +25,7 @@ from prometheus_client import Gauge, start_http_server
 from logutil import LogLevelAction, get_log_level
 from lux import LuxSensor, LuxSensorException
 from pm25 import PM25Sensor
+from pressure import PressureSensor, PressureSensorException
 from prometheus_util import acquire_prometheus_temperature
 from tvoc import TVOCException, TVOCSensor
 
@@ -36,19 +36,6 @@ CO2 = "co2_ppm"
 PM25 = "pm25"
 TVOC = "tvoc"
 TEMPERATURE = "temperature"
-
-
-def sea_level_pressure(pressure, outside_temp, altitude):
-    """
-    Convert sensor pressure value to value at the sea level.
-    The formula uses outside temperature to compensate.
-    :param pressure: measured pressure
-    :param outside_temp: outside temperature in degrees of Celsius (float)
-    :param altitude: altitude
-    :return: pressure at sea level
-    """
-    temp_comp = outside_temp + 273.15
-    return pressure / pow(1.0 - 0.0065 * int(altitude) / temp_comp, 5.255)
 
 
 # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements,too-many-positional-arguments
@@ -72,12 +59,11 @@ def sensor_loop(
 
     i2c = board.I2C()
 
+    pressure_sensor = None
     try:
-        bmp_sensor = adafruit_bmp280.Adafruit_BMP280_I2C(i2c)
-        logger.info("BMP280 sensor connected")
-    except RuntimeError as exception:
-        logger.error(f"cannot instantiate BMP280 sensor: {exception}")
-        bmp_sensor = None
+        pressure_sensor = PressureSensor(i2c)
+    except PressureSensorException as exception:
+        logger.error(exception)
 
     scd4x_sensor = None
     try:
@@ -159,7 +145,7 @@ def sensor_loop(
         )
         logger.debug(f"outside temperature = {outside_temp}")
 
-        if bmp_sensor:
+        if pressure_sensor:
             # Fall back to inside temperature if outside temperature measurement is not available.
             # Assumes the availability of the outside temperature measurement does not flap.
             temp = outside_temp
@@ -169,16 +155,15 @@ def sensor_loop(
                 )
                 temp = inside_temp
 
-            pressure = acquire_pressure(
-                bmp_sensor,
+            pressure_val = pressure_sensor.get_value(
                 altitude,
                 temp,
             )
-            if pressure:
-                mqtt_payload_dict[PRESSURE] = pressure
-                gauges[PRESSURE].labels(name="base").set(pressure)
+            if pressure_val:
+                mqtt_payload_dict[PRESSURE] = pressure_val
+                gauges[PRESSURE].labels(name="base").set(pressure_val)
                 if temp:
-                    gauges[PRESSURE].labels(name="sea").set(pressure)
+                    gauges[PRESSURE].labels(name="sea").set(pressure_val)
 
         if pm25_sensor:
             data_items = pm25_sensor.get_values()
@@ -232,27 +217,6 @@ def acquire_owfs_temperature(owfsdir, temp_sensors):
             data[sensor_name] = float(temp)
 
     return data
-
-
-def acquire_pressure(bmp_sensor, altitude, outside_temp):
-    """
-    Read data from the pressure sensor and calculate pressure at sea level.
-    :param bmp_sensor:
-    :param altitude: altitude in meters
-    :param outside_temp: outside temperature in degrees of Celsius
-    :return: pressure value
-    """
-
-    logger = logging.getLogger(__name__)
-
-    pressure_val = bmp_sensor.pressure
-    if pressure_val and pressure_val > 0:
-        logger.debug(f"pressure={pressure_val}")
-        if outside_temp:
-            pressure_val = sea_level_pressure(pressure_val, outside_temp, altitude)
-            logger.debug(f"pressure at sea level={pressure_val}")
-
-    return pressure_val
 
 
 def acquire_scd4x(scd4x_sensor):
