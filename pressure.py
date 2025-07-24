@@ -31,6 +31,7 @@ class PressureSensor:
     """
     pressure sensor abstraction
     """
+
     def __init__(self, i2c):
         """
         initalize pressure sensor
