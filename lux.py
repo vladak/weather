@@ -23,9 +23,11 @@ class LuxSensor:
         """
         initialize the sensor
         """
+        self.logger = logging.getLogger(__name__)
+
         try:
             self.veml7700_sensor = adafruit_veml7700.VEML7700(i2c)
-            logger.info("VEML7700 sensor connected")
+            self.logger.info("VEML7700 sensor connected")
         except RuntimeError as exception:
             raise LuxSensorException(
                 f"cannot instantiate VEML7700 sensor: {exception}"
@@ -38,10 +40,8 @@ class LuxSensor:
         :return: lux value or None on error
         """
 
-        logger = logging.getLogger(__name__)
-
         lux = self.veml7700_sensor.light
-        logger.debug(f"lux={lux}")
+        self.logger.debug(f"lux={lux}")
         return lux
 
     def get_value(self):
