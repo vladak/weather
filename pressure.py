@@ -25,6 +25,7 @@ class PressureSensorException(Exception):
     pressure sensor errors
     """
 
+
 # pylint: disable=too-few-public-methods
 class PressureSensor:
     def __init__(self, i2c):
