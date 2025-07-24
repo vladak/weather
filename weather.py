@@ -117,7 +117,7 @@ def sensor_loop(
 
         #
         # Acquire temperature metrics from OWFS and publish them to MQTT,
-        # eah to its own topic.
+        # each to its own topic.
         # The inside temperature is used for TVOC sensor calibration.
         #
         owfs_temp_dict = acquire_owfs_temperature(owfsdir, temp_sensors)
