@@ -18,7 +18,6 @@ import time
 import adafruit_bmp280
 import adafruit_minimqtt.adafruit_minimqtt as MQTT
 import adafruit_scd4x
-import adafruit_veml7700
 import board
 from adafruit_minimqtt.adafruit_minimqtt import MMQTTException
 from adafruit_pm25.i2c import PM25_I2C
@@ -26,8 +25,9 @@ from prometheus_api_client import PrometheusConnect
 from prometheus_client import Gauge, start_http_server
 
 from logutil import LogLevelAction, get_log_level
+from lux import LuxSensor, LuxSensorException
 from prometheus_util import acquire_prometheus_temperature
-from tvoc import TVOCSensor, TVOCException
+from tvoc import TVOCException, TVOCSensor
 
 PRESSURE = "pressure_hpa"
 HUMIDITY = "humidity"
@@ -88,12 +88,11 @@ def sensor_loop(
 
     pm25_sensor = PM25_I2C(i2c, None)
 
+    lux_sensor = None
     try:
-        veml7700_sensor = adafruit_veml7700.VEML7700(i2c)
-        logger.info("VEML7700 sensor connected")
-    except RuntimeError as exception:
-        logger.error(f"cannot instantiate VEML7700 sensor: {exception}")
-        veml7700_sensor = None
+        lux_sensor = LuxSensor(i2c)
+    except LuxSensorException as exception:
+        logger.error(exception)
 
     tvoc_sensor = None
     try:
@@ -125,8 +124,8 @@ def sensor_loop(
             if relative_humidity:
                 mqtt_payload_dict[HUMIDITY] = relative_humidity
 
-        if veml7700_sensor:
-            lux = acquire_light(veml7700_sensor)
+        if lux_sensor:
+            lux = lux_sensor.get_value()
             if lux is not None:
                 mqtt_payload_dict[LUX] = lux
 
@@ -294,20 +293,6 @@ def acquire_scd4x(scd4x_sensor):
         logger.debug(f"humidity={humidity:.1f}%")
 
     return humidity, co2_ppm
-
-
-def acquire_light(light_sensor):
-    """
-    Reads light amount in the form of Lux
-    :param light_sensor light sensor object
-    :return: lux value or None on error
-    """
-
-    logger = logging.getLogger(__name__)
-
-    lux = light_sensor.light
-    logger.debug(f"lux={lux}")
-    return lux
 
 
 def parse_args():
