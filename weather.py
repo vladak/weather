@@ -20,12 +20,12 @@ import adafruit_minimqtt.adafruit_minimqtt as MQTT
 import adafruit_scd4x
 import board
 from adafruit_minimqtt.adafruit_minimqtt import MMQTTException
-from adafruit_pm25.i2c import PM25_I2C
 from prometheus_api_client import PrometheusConnect
 from prometheus_client import Gauge, start_http_server
 
 from logutil import LogLevelAction, get_log_level
 from lux import LuxSensor, LuxSensorException
+from pm25 import PM25Sensor
 from prometheus_util import acquire_prometheus_temperature
 from tvoc import TVOCException, TVOCSensor
 
@@ -86,7 +86,7 @@ def sensor_loop(
     except ValueError as exception:
         logger.error(f"cannot find SCD4x sensor: {exception}")
 
-    pm25_sensor = PM25_I2C(i2c, None)
+    pm25_sensor = PM25Sensor(i2c)
 
     lux_sensor = None
     try:
@@ -181,7 +181,7 @@ def sensor_loop(
                     gauges[PRESSURE].labels(name="sea").set(pressure)
 
         if pm25_sensor:
-            data_items = acquire_pm25(pm25_sensor)
+            data_items = pm25_sensor.get_values()
             if data_items:
                 for name, value in data_items:
                     label_name = name.replace(" ", "_")
@@ -204,26 +204,6 @@ def sensor_loop(
                 mqtt.reconnect()
 
         time.sleep(sleep_timeout)
-
-
-def acquire_pm25(pm25_sensor):
-    """
-    Read PM25 data
-    :param pm25_sensor: PM25 sensor object
-    :return: data items or None
-    """
-
-    logger = logging.getLogger(__name__)
-
-    try:
-        acquired_data = pm25_sensor.read()
-    except RuntimeError:
-        logger.warning("Unable to read from PM25 sensor")
-        return None
-
-    logger.debug(f"PM25 data={acquired_data}")
-
-    return acquired_data.items()
 
 
 def acquire_owfs_temperature(owfsdir, temp_sensors):
