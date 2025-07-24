@@ -16,12 +16,12 @@ import threading
 import time
 
 import adafruit_minimqtt.adafruit_minimqtt as MQTT
-import adafruit_scd4x
 import board
 from adafruit_minimqtt.adafruit_minimqtt import MMQTTException
 from prometheus_api_client import PrometheusConnect
 from prometheus_client import Gauge, start_http_server
 
+from co2 import CO2Sensor, CO2SensorException
 from logutil import LogLevelAction, get_log_level
 from lux import LuxSensor, LuxSensorException
 from pm25 import PM25Sensor
@@ -65,12 +65,11 @@ def sensor_loop(
     except PressureSensorException as exception:
         logger.error(exception)
 
-    scd4x_sensor = None
+    co2_sensor = None
     try:
-        scd4x_sensor = adafruit_scd4x.SCD4X(i2c)
-        logger.info("SCD4x sensor connected")
-    except ValueError as exception:
-        logger.error(f"cannot find SCD4x sensor: {exception}")
+        co2_sensor = CO2Sensor(i2c)
+    except CO2SensorException as exception:
+        logger.error(exception)
 
     pm25_sensor = PM25Sensor(i2c)
 
@@ -86,10 +85,6 @@ def sensor_loop(
     except TVOCException as exception:
         logger.error(exception)
 
-    if scd4x_sensor:
-        logger.info("Waiting for the first measurement from the SCD-40 sensor")
-        scd4x_sensor.start_periodic_measurement()
-
     logger.info(f"Connecting to Prometheus on {prometheus_url}")
     prometheus_connect = PrometheusConnect(url=prometheus_url)
 
@@ -103,10 +98,11 @@ def sensor_loop(
             logger.warning(f"Got MQTT exception: {mqtt_exc}")
             mqtt.reconnect()
 
-        if scd4x_sensor:
-            relative_humidity, co2_ppm = acquire_scd4x(scd4x_sensor)
+        if co2_sensor:
+            co2_ppm = co2_sensor.get_co2ppm()
             if co2_ppm:
                 mqtt_payload_dict[CO2] = co2_ppm
+            relative_humidity = co2_sensor.get_humidity()
             if relative_humidity:
                 mqtt_payload_dict[HUMIDITY] = relative_humidity
 
@@ -217,26 +213,6 @@ def acquire_owfs_temperature(owfsdir, temp_sensors):
             data[sensor_name] = float(temp)
 
     return data
-
-
-def acquire_scd4x(scd4x_sensor):
-    """
-    Reads CO2 and humidity from the SCD4x sensor.
-    :param scd4x_sensor:
-    :return: tuple of relative humidity and CO2 PPM value
-    """
-
-    logger = logging.getLogger(__name__)
-
-    co2_ppm = scd4x_sensor.CO2
-    if co2_ppm:
-        logger.debug(f"CO2 ppm={co2_ppm}")
-
-    humidity = scd4x_sensor.relative_humidity
-    if humidity:
-        logger.debug(f"humidity={humidity:.1f}%")
-
-    return humidity, co2_ppm
 
 
 def parse_args():
