@@ -29,6 +29,7 @@ class TVOCSensor:
         Try to initialize on of the supported sensors.
         """
         self.logger = logging.getLogger(__name__)
+        self.sgp30_sensor = None
 
         try:
             self.ens160_sensor = adafruit_ens160.ENS160(i2c)
@@ -41,7 +42,6 @@ class TVOCSensor:
             self.ens160_sensor = None
 
         # Try to fall back to SGP30 if ENS160 is not present or cannot be instantiated.
-        self.sgp30_sensor = None
         if self.ens160_sensor is None:
             try:
                 self.sgp30_sensor = adafruit_sgp30.Adafruit_SGP30(i2c)
