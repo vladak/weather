@@ -18,6 +18,7 @@ import time
 from datetime import datetime
 
 from grafana_client.api import GrafanaApi
+# pylint: disable=no-name-in-module
 from prometheus_api_client import PrometheusConnect
 
 # pylint: disable=no-name-in-module

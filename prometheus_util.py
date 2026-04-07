@@ -4,6 +4,7 @@ Utility functions to work with Prometheus API.
 
 import logging
 
+# pylint: disable=no-name-in-module
 from prometheus_api_client import MetricsList, PrometheusApiClientException
 from requests.exceptions import RequestException
 
