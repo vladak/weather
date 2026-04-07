@@ -13,6 +13,7 @@ class CO2SensorException(Exception):
     """
 
 
+# pylint: disable=too-few-public-methods
 class CO2Sensor:
     """
     CO2 sensor abstraction
