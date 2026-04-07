@@ -99,10 +99,9 @@ def sensor_loop(
             mqtt.reconnect()
 
         if co2_sensor:
-            co2_ppm = co2_sensor.get_co2ppm()
+            co2_ppm, relative_humidity = co2_sensor.get_data()
             if co2_ppm:
                 mqtt_payload_dict[CO2] = co2_ppm
-            relative_humidity = co2_sensor.get_humidity()
             if relative_humidity:
                 mqtt_payload_dict[HUMIDITY] = relative_humidity
 

@@ -36,22 +36,17 @@ class CO2Sensor:
         self.logger.info("Waiting for the first measurement from the SCD-40 sensor")
         self.scd4x_sensor.start_periodic_measurement()
 
-    def get_co2ppm(self):
+    def get_data(self):
         """
-        Reads CO2 from the SCD4x sensor.
-        :return: CO2 PPM value
+        Reads CO2 and relative humidity from the SCD4x sensor.
+        :return: CO2 PPM, relative humidity values
         """
-        co2_ppm = self.scd4x_sensor.CO2
-        if co2_ppm:
+        co2_ppm = None
+        humidity = None
+        if self.scd4x_sensor.data_ready:
+            co2_ppm = self.scd4x_sensor.CO2
             self.logger.debug(f"CO2 ppm={co2_ppm}")
-        return co2_ppm
-
-    def get_humidity(self):
-        """
-        Reads humidity from the SCD4x sensor.
-        :return: relative humidity value
-        """
-        humidity = self.scd4x_sensor.relative_humidity
-        if humidity:
+            humidity = self.scd4x_sensor.relative_humidity
             self.logger.debug(f"humidity={humidity:.1f}%")
-        return humidity
+
+        return co2_ppm, humidity
