@@ -18,6 +18,7 @@ import time
 import adafruit_minimqtt.adafruit_minimqtt as MQTT
 import board
 from adafruit_minimqtt.adafruit_minimqtt import MMQTTException
+
 # pylint: disable=no-name-in-module
 from prometheus_api_client import PrometheusConnect
 from prometheus_client import Gauge, start_http_server
