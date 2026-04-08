@@ -69,7 +69,8 @@ class CO2Sensor:
     ]:
         """
         Reads CO2 and relative humidity.
-        :return: (co2_ppm, humidity_pct) or (None, None) if not ready (SCD4x only) or if no sensor found
+        :return: (co2_ppm, humidity_pct) or (None, None) if not ready (SCD4x only)
+        or if no sensor found
         """
 
         if self.sensor is None:
