@@ -13,3 +13,4 @@ grafana-client
 tomli
 adafruit-circuitpython-ens160
 adafruit-circuitpython-minimqtt
+adafruit-circuitpython-stcc4
