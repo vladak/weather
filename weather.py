@@ -57,7 +57,7 @@ def sensor_loop(
     main loop in which sensor values are collected and set into Prometheus
     client objects.
     """
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
 
     i2c = board.I2C()
 
@@ -196,7 +196,7 @@ def acquire_owfs_temperature(owfsdir, temp_sensors):
     :return: dictionary of sensor name to temperature as float value in degrees of Celsius
     """
 
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
 
     logger.debug(f"temperature sensors: {dict(temp_sensors.items())}")
     data = {}
@@ -264,7 +264,7 @@ def conf_get_altitude(config, global_section_name):
     :param global_section_name: name of the global section
     :return: altitude value (int)
     """
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
 
     altitude_name = "altitude"
     altitude_value = config[global_section_name].get(altitude_name)
@@ -294,7 +294,7 @@ def config_load(config, config_file):
     hostname, MQTT topic)
     """
 
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
 
     temp_sensors_section_name = "temp_sensors"
     if temp_sensors_section_name not in config.sections():
@@ -384,7 +384,7 @@ def main():
     args = parse_args()
 
     logging.basicConfig()
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
     logger.setLevel(args.loglevel)
     logger.info("Running")
 

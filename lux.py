@@ -23,7 +23,7 @@ class LuxSensor:
         """
         initialize the sensor
         """
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger()
 
         try:
             self.veml7700_sensor = adafruit_veml7700.VEML7700(i2c)

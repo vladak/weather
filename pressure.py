@@ -36,7 +36,7 @@ class PressureSensor:
         """
         initalize pressure sensor
         """
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger()
 
         try:
             self.bmp_sensor = adafruit_bmp280.Adafruit_BMP280_I2C(i2c)

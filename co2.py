@@ -32,7 +32,7 @@ class CO2Sensor:
     """
 
     def __init__(self, i2c):
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger()
         self.sensor = None
         self.sensor_name = None
 

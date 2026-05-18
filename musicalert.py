@@ -45,7 +45,7 @@ class GrafanaAlertHandler(BaseHTTPRequestHandler):
         :param now: datetime instance of current time
         :return: whether alerting should be performed, w.r.t. time allowed
         """
-        logger = logging.getLogger(__name__)
+        logger = logging.getLogger()
 
         date_today = date(now.year, now.month, now.day)
         start_time = datetime.combine(date_today, time(hour=self.server.start_hr))
@@ -64,7 +64,7 @@ class GrafanaAlertHandler(BaseHTTPRequestHandler):
         criteria should return "bad request" or such however to keep Grafana
         happy it always returns success.
         """
-        logger = logging.getLogger(__name__)
+        logger = logging.getLogger()
 
         if not self.headers.get("User-Agent") == "Grafana":
             logger.info("Not a Grafana POST request, ignoring")
@@ -121,7 +121,7 @@ def play_mp3(play_queue, timeout=30, mpg123="mpg123"):
     Worker to play files in the play_queue via mpg123.
     """
 
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
 
     while True:
         path = play_queue.get()
@@ -157,7 +157,7 @@ def handle_grafana_payload(payload, mp3match, play_queue):
     if payload is None:
         raise GrafanaPayloadException("no payload, ignoring")
 
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
     logger.debug(f"Got payload: {payload}")
 
     status = payload.get("status")
@@ -182,7 +182,7 @@ def handle_grafana_alert(alert, mp3match, play_queue):
     :return True if the file was enqueued for playing, False otherwise.
     """
 
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
 
     status = alert.get("status")
     if status is None:
@@ -254,7 +254,7 @@ def run_server(port, mp3match, range_hr, play_queue):
     """
     Start HTTP server, will not return unless interrupted.
     """
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
 
     server_address = ("localhost", port)
     httpd = GrafanaAlertHttpServer(server_address, mp3match, range_hr, play_queue)
@@ -326,7 +326,7 @@ def load_mp3_config(config, config_file):
     :return: dictionary with mp3 file mappings
     """
 
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
 
     mp3config_section_name = "mp3match"
     if mp3config_section_name not in config.keys():
@@ -364,7 +364,7 @@ def load_hr_config(config):
     :return: tuple of start and end hour
     """
 
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
 
     start_hr = 8
     end_hr = 23
@@ -392,7 +392,7 @@ def main():
     server_port = args.port
 
     logging.basicConfig()
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
     logger.setLevel(args.loglevel)
 
     if which(args.mpg123) is None:

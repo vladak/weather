@@ -28,7 +28,7 @@ class TVOCSensor:
         """
         Try to initialize on of the supported sensors.
         """
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger()
         self.sgp30_sensor = None
 
         try:

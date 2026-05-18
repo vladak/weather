@@ -63,7 +63,7 @@ def get_temperature_difference(url, sensor_a, sensor_b):
     :return: float value or None or error
     """
 
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
 
     prometheus_connect = PrometheusConnect(url=url)
     sensor_b = {"sensor": sensor_b}
@@ -93,7 +93,7 @@ class FanConfig:
 
     # pylint: disable=too-many-instance-attributes
     def __init__(self, config_file):
-        logger = logging.getLogger(__name__)
+        logger = logging.getLogger()
 
         logger.debug(f"Loading configuration from '{config_file}'")
         config = configparser.ConfigParser()
@@ -128,7 +128,7 @@ async def main():
     args = parse_args()
 
     logging.basicConfig()
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
     logger.setLevel(args.loglevel)
 
     # To support relative paths.
@@ -166,7 +166,7 @@ def add_grafana_annotation(config, text):
     :param config: configuration loaded from the .ini file
     :param text: text to use
     """
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
 
     grafana_url = config.grafana_url
     grafana_api = GrafanaApi(auth=config.grafana_api_token, host=grafana_url)
@@ -194,7 +194,7 @@ async def turn_on(p110, config):
     :param p110: PyP100 instance
     :param config: configuration instance
     """
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
 
     logger.info("Turning on")
     await p110.on()
@@ -206,7 +206,7 @@ async def turn_off(p110, config):
     :param p110: PyP100 instance
     :param config: configuration instance
     """
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
 
     logger.info("Turning off")
     await p110.off()
@@ -219,7 +219,7 @@ async def loop(config, p110):
     :param p110: P110 instance to control the socket
     """
 
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
 
     sleep_seconds = config.sleep_seconds
 

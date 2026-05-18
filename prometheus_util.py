@@ -29,7 +29,7 @@ def acquire_prometheus_temperature(prometheus_connect, sensor_name):
     :return: temperature as float value in degrees of Celsius
     """
 
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
 
     temp_value = None
 

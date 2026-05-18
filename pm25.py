@@ -26,7 +26,7 @@ class PM25Sensor:
         :return: data items or None
         """
 
-        logger = logging.getLogger(__name__)
+        logger = logging.getLogger()
 
         try:
             acquired_data = self.pm25_sensor.read()
