@@ -6,6 +6,7 @@ adafruit-circuitpython-pm25
 pytest
 adafruit-circuitpython-veml7700
 adafruit-circuitpython-sgp30
+adafruit-circuitpython-sgp41
 black
 prometheus-api-client[dataframe]
 tapo

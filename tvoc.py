@@ -9,6 +9,11 @@ import time
 import adafruit_ens160
 import adafruit_sgp30
 
+try:
+    from adafruit_sgp41.sgp41 import SGP41
+except ImportError:
+    pass
+
 
 class TVOCException(Exception):
     """
@@ -29,6 +34,9 @@ class TVOCSensor:
         Try to initialize on of the supported sensors.
         """
         self.logger = logging.getLogger()
+        self.ens160_sensor = None
+        self.sgp41_sensor = None
+        self.sgp41_conditioning_start = None
         self.sgp30_sensor = None
 
         try:
@@ -41,8 +49,23 @@ class TVOCSensor:
             self.logger.error(f"cannot instantiate ENS160 sensor: {exception}")
             self.ens160_sensor = None
 
-        # Try to fall back to SGP30 if ENS160 is not present or cannot be instantiated.
+        # Try to fall back to SGP41 if ENS160 is not present or cannot be instantiated.
         if self.ens160_sensor is None:
+            try:
+                self.sgp41_sensor = SGP41(i2c)
+                self.sgp41_conditioning_start = time.time()
+                self.logger.info(
+                    f"SGP41 sensor present (serial {self.sgp41_sensor.serial_number})"
+                )
+                return
+            except (OSError, RuntimeError) as exception:
+                self.logger.error(f"cannot instantiate SGP41 sensor: {exception}")
+                self.sgp41_sensor = None
+            except NameError:
+                self.logger.warning("No library for the SGP41 sensor")
+
+        # Try to fall back to SGP30 if ENS160/SGP41 are not present or cannot be instantiated.
+        if self.ens160_sensor is None and self.sgp41_sensor is None:
             try:
                 self.sgp30_sensor = adafruit_sgp30.Adafruit_SGP30(i2c)
                 try:
@@ -102,7 +125,7 @@ class TVOCSensor:
         :param sgp30_sensor: SGP30 sensor instance
         :param relative_humidity: relative humidity (for calibration)
         :param temp_celsius: temperature (for calibration)
-        :return: TVOC
+        :return: TVOC ppb
         """
 
         if relative_humidity and temp_celsius:
@@ -139,7 +162,7 @@ class TVOCSensor:
         :param ens160_sensor: ENS160 sensor instance
         :param relative_humidity: relative humidity (for calibration)
         :param temp_celsius: temperature (for calibration)
-        :return: TVOC reading or None
+        :return: TVOC ppb reading or None
         """
 
         if temp_celsius:
@@ -162,14 +185,59 @@ class TVOCSensor:
 
         return tvoc
 
+    def _acquire_tvoc_sgp41(self, relative_humidity, temp_celsius):
+        """
+        :param relative_humidity: relative humidity (for calibration)
+        :param temp_celsius: temperature (for calibration)
+        :return: tuple of VOC index and NOx index readings or None values
+        """
+
+        kwargs = {}
+        if relative_humidity:
+            kwargs["humidity"] = relative_humidity
+        if temp_celsius:
+            kwargs["temperature"] = temp_celsius
+
+        if time.time() < self.sgp41_conditioning_start + 10:
+            self.logger.debug(f"Conditioning the SGP41 sensor with {kwargs}")
+            try:
+                self.sgp41_sensor.conditioning(**kwargs)
+            except (OSError, RuntimeError) as exception:
+                self.logger.error(f"failed to condition the SGP41 sensor: {exception}")
+            return None, None
+
+        self.logger.debug(f"Calibrating the SGP41 sensor with {kwargs}")
+        try:
+            tvoc_idx, nox_idx = self.sgp41_sensor.measure_index(**kwargs)
+        except (OSError, RuntimeError) as exception:
+            self.logger.error(f"failed to get reading from SGP41: {exception}")
+            return None, None
+
+        if tvoc_idx == 0:
+            tvoc_idx = None
+        if nox_idx == 0:
+            nox_idx = None
+        if tvoc_idx is not None or nox_idx is not None:
+            self.logger.debug(
+                f"Got readings from SGP41: TVOC index={tvoc_idx}, NOx index={nox_idx}"
+            )
+
+        return tvoc_idx, nox_idx
+
     def get_val(self, relative_humidity, inside_temp):
         """
-        retrieve TVOC value
+        retrieve TVOC values
+        :return: tuple of TVOC ppb, TVOC index, NOx index readings or None values
         """
-        tvoc = None
-        if self.sgp30_sensor:
-            tvoc = self._acquire_tvoc_sgp30(relative_humidity, inside_temp)
-        if self.ens160_sensor:
-            tvoc = self._acquire_tvoc_ens160(relative_humidity, inside_temp)
+        tvoc_ppb = None
+        tvoc_idx = None
+        nox_idx = None
 
-        return tvoc
+        if self.sgp30_sensor:
+            tvoc_ppb = self._acquire_tvoc_sgp30(relative_humidity, inside_temp)
+        if self.ens160_sensor:
+            tvoc_ppb = self._acquire_tvoc_ens160(relative_humidity, inside_temp)
+        if self.sgp41_sensor:
+            tvoc_idx, nox_idx = self._acquire_tvoc_sgp41(relative_humidity, inside_temp)
+
+        return tvoc_ppb, tvoc_idx, nox_idx

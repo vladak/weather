@@ -36,7 +36,9 @@ HUMIDITY = "humidity"
 LUX = "lux"
 CO2 = "co2_ppm"
 PM25 = "pm25"
-TVOC = "tvoc"
+TVOC_PPB = "tvoc_ppb"
+TVOC_IDX = "tvoc_idx"
+NOX_IDX = "nox_idx"
 TEMPERATURE = "temperature"
 
 
@@ -92,6 +94,7 @@ def sensor_loop(
 
     while True:
         mqtt_payload_dict = {}
+        relative_humidity = None
 
         # Make sure to stay connected to the broker e.g. in case of keep alive.
         try:
@@ -173,9 +176,15 @@ def sensor_loop(
                     gauges[PM25].labels(measurement=label_name).set(value)
 
         if tvoc_sensor:
-            tvoc_val = tvoc_sensor.get_val(relative_humidity, inside_temp)
-            if tvoc_val is not None:
-                mqtt_payload_dict[TVOC] = tvoc_val
+            tvoc_ppb, tvoc_idx, nox_idx = tvoc_sensor.get_val(
+                relative_humidity, inside_temp
+            )
+            if tvoc_ppb is not None:
+                mqtt_payload_dict[TVOC_PPB] = tvoc_ppb
+            if tvoc_idx is not None:
+                mqtt_payload_dict[TVOC_IDX] = tvoc_idx
+            if nox_idx is not None:
+                mqtt_payload_dict[NOX_IDX] = nox_idx
 
         if mqtt_payload_dict:
             logger.debug(f"publishing to {mqtt_topic}: {mqtt_payload_dict}")

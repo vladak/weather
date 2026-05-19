@@ -26,7 +26,7 @@ These metrics are collected:
 | [CO2](https://en.wikipedia.org/wiki/Carbon_dioxide) and [humidity](https://en.wikipedia.org/wiki/Humidity) |          [Adafruit SCD-40](https://www.adafruit.com/product/5187)           | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) (STEMMA QT) | [Python libraries](https://github.com/adafruit/Adafruit_CircuitPython_SCD4x) |
 | [air particles](https://en.wikipedia.org/wiki/Particulates) |         [Adafruit PMSA003I](https://www.adafruit.com/product/4632)          | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) (STEMMA QT) | [Python libraries]( https://github.com/adafruit/Adafruit_CircuitPython_PM25) |
 | light in [Lux](https://en.wikipedia.org/wiki/Lux) |         [Adafruit VEML7700](https://www.adafruit.com/product/4162)          | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) (STEMMA QT) | [Python libraries](https://github.com/adafruit/Adafruit_CircuitPython_VEML7700) |
-| [TVOC](https://en.wikipedia.org/wiki/Volatile_organic_compound#Indoor_VOCs) |          [Adafruit ENS160](https://www.adafruit.com/product/5606)           | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) (STEMMA QT) | [Python libraries](https://github.com/adafruit/Adafruit_CircuitPython_SGP30) |
+| [TVOC](https://en.wikipedia.org/wiki/Volatile_organic_compound#Indoor_VOCs) concentration, VOC index and NOx index | [Adafruit ENS160](https://www.adafruit.com/product/5606), SGP30 or [SGP41](https://www.adafruit.com/product/6455) | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) (STEMMA QT) | Python libraries for [ENS160](https://github.com/adafruit/Adafruit_CircuitPython_ENS160), [SGP30](https://github.com/adafruit/Adafruit_CircuitPython_SGP30) and [SGP41](https://github.com/adafruit/Adafruit_CircuitPython_SGP41) |
 
 The I2C sensors are connected to the [Raspberry Pi](https://www.raspberrypi.org/) via the [SparkFun Qwiic / STEMMA QT HAT](https://www.adafruit.com/product/4688) that offers 4 [Stemma Qt](https://learn.adafruit.com/introducing-adafruit-stemma-qt/what-is-stemma-qt) ports.
 
@@ -224,11 +224,29 @@ metrics:
     type: gauge
   -
     # The name of the metric in prometheus
-    prom_name: tvoc
+    prom_name: tvoc_ppb
     # The name of the metric in a MQTT JSON message
-    mqtt_name: tvoc
+    mqtt_name: tvoc_ppb
     # The prometheus help text for this metric
-    help: TVOC
+    help: TVOC ppb
+    # The prometheus type for this metric. Valid values are: "gauge" and "counter"
+    type: gauge
+  -
+    # The name of the metric in prometheus
+    prom_name: tvoc_idx
+    # The name of the metric in a MQTT JSON message
+    mqtt_name: tvoc_idx
+    # The prometheus help text for this metric
+    help: TVOC index
+    # The prometheus type for this metric. Valid values are: "gauge" and "counter"
+    type: gauge
+  -
+    # The name of the metric in prometheus
+    prom_name: nox_idx
+    # The name of the metric in a MQTT JSON message
+    mqtt_name: nox_idx
+    # The prometheus help text for this metric
+    help: NOx index
     # The prometheus type for this metric. Valid values are: "gauge" and "counter"
     type: gauge
 ```
@@ -384,6 +402,7 @@ end_hr = 20
 - VEML7700 guide: https://learn.adafruit.com/adafruit-veml7700
 - ENS160 guide: https://learn.adafruit.com/adafruit-ens160-mox-gas-sensor/circuitpython-python
 - SGP30 guide: https://learn.adafruit.com/adafruit-sgp30-gas-tvoc-eco2-mox-sensor/circuitpython-wiring-test
+- SGP41 guide: https://learn.adafruit.com/adafruit-sgp41-gas-sensor/circuitpython-python
 
 ## Lessons learned
 
