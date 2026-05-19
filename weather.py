@@ -98,7 +98,7 @@ def sensor_loop(
 
         # Make sure to stay connected to the broker e.g. in case of keep alive.
         try:
-            mqtt.loop(1)
+            mqtt.loop(0.1)
         except MMQTTException as mqtt_exc:
             logger.warning(f"Got MQTT exception: {mqtt_exc}")
             mqtt.reconnect()
@@ -243,7 +243,7 @@ def parse_args():
     )
     parser.add_argument("--owfsdir", default="/run/owfs", help="OWFS directory")
     parser.add_argument(
-        "-s", "--sleep", default=5, type=int, help="sleep duration in seconds"
+        "-s", "--sleep", default=1, type=int, help="sleep duration in seconds"
     )
     parser.add_argument(
         "-l",
