@@ -450,6 +450,7 @@ def main():
         port=mqtt_port,
         socket_pool=socket,
         ssl_context=ssl.create_default_context(),
+        socket_timeout=0.1,
     )
     logger.info(f"Connecting to MQTT broker {mqtt_hostname} on port {mqtt_port}")
     mqtt.connect()
